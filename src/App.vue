@@ -1,6 +1,7 @@
 <template>
-  <div id="app">
-    <Navbar></Navbar>
+  <div id="app" >
+    <Navbar  @login="login" v-bind:user="user"></Navbar>
+    <router-view></router-view>
   </div>
 </template>
 
@@ -9,8 +10,18 @@ import Navbar from './components/Navbar.vue'
 
 export default {
   name: 'App',
+  data: () => {
+    return {
+      user: null,
+    }
+  },
   components: {
     Navbar
+  },
+  methods: {
+    login ({user}) {
+      this.user = user;
+    }
   }
 }
 </script>

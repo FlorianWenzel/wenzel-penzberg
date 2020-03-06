@@ -1,7 +1,6 @@
 <template>
     <div class="text-light">
         {{username}}
-        <img :src="img" alt="">
     </div>
 </template>
 
@@ -12,7 +11,6 @@
         methods: {
         },
         created() {
-            console.log(this.username, this.img)
         }
     }
 </script>

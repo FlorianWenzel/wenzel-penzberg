@@ -1,0 +1,18 @@
+const multer  = require('multer');
+const uuid = require('uuid/v1');
+const path = require('path');
+
+const diskStorageToUploads = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads')
+    },
+    filename: (req, file, cb) => {
+        cb(null, uuid() + path.extname(file.originalname));
+    }
+});
+
+const saveToUploads = multer({storage: diskStorageToUploads});
+
+module.exports = {
+    saveToUploads: saveToUploads.single('file')
+};

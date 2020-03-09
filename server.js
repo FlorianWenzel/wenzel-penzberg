@@ -8,11 +8,17 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const multerConfig = require("./multer.js");
 const jwt = require('jsonwebtoken');
-const { exec } = require("child_process");
+const { exec } = require('child_process')
 const fs = require('fs');
 const env = require('./src/assets/env');
+const ExifImage = require('exif').ExifImage;
+const axios = require('axios');
+const path = require('path');
+const uuid = require('uuid/v4');
+
 app.use(bodyParser.json());
 let db;
+
 
 app.use(cors());
 // Use connect method to connect to the server
@@ -39,7 +45,6 @@ MongoClient.connect(async (err, client) => {
         const {password} = account;
         const pwd = bcrypt.hashSync(password, bcrypt.genSaltSync(10));
         const newToken = bcrypt.hashSync(pwd, bcrypt.genSaltSync(10))
-        delete account.password;
         await db.users.insertOne({...account, pwd, token: newToken});
     }
 });
@@ -130,23 +135,31 @@ app.post('/upload', multerConfig.saveToUploads, async (req, res) => {
         //TODO
         return;
     }
-    exec("mogrify -auto-orient uploads/" + file.filename, async (error) => {
+    await exec("mogrify -auto-orient uploads/" + file.filename, async (error) => {
         if (error) {
             console.log(`error: ${error.message}`);
             return;
         }
-        exec("convert uploads/" + file.filename + ' -resize 512@ uploads/prev_' + file.filename + '', async (error) => {
+        await exec("convert uploads/" + file.filename + ' -resize 512@ uploads/thumbnail/' + file.filename, async (error) => {
             if (error) {
                 console.log(`error: ${error.message}`);
                 return;
             }
 
             const img_token = jwt.sign(file.filename, token);
-            await db.images.insertOne({parent: token, token: img_token , ...file});
-            await db.images.insertOne({parent: token, token: img_token , ...file, filename: 'prev_' + file.filename, path: file.path.replace(file.filename, 'prev_' + file.filename)});
-            res.send({valid: true, url: env.backend_url + "/image/" + file.filename + "?token=" + img_token, filename: file.filename});
+            await db.images.insertOne({parent: token, token: img_token , ...file, thumbnail_url: '/thumbnail/' + file.filename, dropbox: false});
+            res.send({valid: true, thumbnail_url: env.backend_url  + '/image/thumbnail/' + file.filename, src: env.backend_url + "/image/" + file.filename + "?token=" + img_token, filename: file.filename});
         });
     });
+});
+app.get('/image/thumbnail/:filename', async (req, res) => {
+    const { filename } = req.params;
+    const image = await db.images.findOne({filename});
+    if(!image){
+        res.send(404);
+        return;
+    }
+    res.sendFile(__dirname + '/uploads/thumbnail/' + filename);
 });
 app.get('/image/:filename', async (req, res) => {
     const { token } = req.query;
@@ -158,6 +171,44 @@ app.get('/image/:filename', async (req, res) => {
     }
     res.sendFile(__dirname + '/' + image.path);
 });
+app.post('/importFromDropbox', async (req, res) => {
+    const {url, token} = req.body;
+    const user = await db.users.findOne({token});
+    if(!user){
+        res.statusCode(401);
+        return;
+    }
+
+    const extention = path.extname(url).replace('?raw=1', '');
+    const filename = path.basename(url);
+    const imageBuffer = await axios.get(url,{ responseType: 'arraybuffer' })
+    .then(response => Buffer.from(response.data, 'binary'));
+    const thumbnailname = uuid() + ".jpg";
+    fs.writeFileSync(__dirname + "/temp/" + filename, imageBuffer);
+    await new Promise((resolve, reject) => {
+        exec("convert " + __dirname + "/temp/" + filename + ' -resize 512@ ' + __dirname + '/uploads/thumbnail/' + thumbnailname, async (error) => {
+            if (error) {
+                console.log(`error: ${error.message}`);
+                reject();
+            }
+            resolve();
+        });
+    });
+    const meta = await new Promise((resolve) => {
+        new ExifImage({ image : __dirname +'/temp/' + filename}, async (error, meta) => {
+            if (error){
+                resolve({meta: null});
+            }else{
+                resolve(meta);
+            }
+        });
+    });
+    const image = {parent: token, dropbox: true, filename: thumbnailname, src: url, thumbnail_url: env.backend_url + '/image/thumbnail/' + thumbnailname, meta};
+    await db.images.insertOne(image);
+    fs.unlinkSync(__dirname +'/temp/' + filename);
+    res.send(image);
+});
+
 app.get('/posts', async (req, res) => {
     const {token} = req.query;
     let posts = await db.posts.find({publicity: 'public'}).toArray();

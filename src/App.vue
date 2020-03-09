@@ -3,7 +3,7 @@
   <div id="app" >
     <Navbar  @login="login" :mobile="mobile" :user="user"></Navbar>
     <div id="content">
-      <router-view :user="user"></router-view>
+      <router-view :user="user" :mobile="mobile"></router-view>
     </div>
   </div>
 </template>
@@ -52,6 +52,9 @@
   }
   #content {
     padding-top: 20px;
+  }
+  .viewer-canvas{
+    background: #363636;
   }
   .bg-info, .btn-info, .badge-primary{
     background-color: #2A7118!important;

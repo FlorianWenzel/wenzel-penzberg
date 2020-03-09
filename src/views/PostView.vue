@@ -1,10 +1,9 @@
 <template>
     <form class="m-5" @submit="post">
-
         <div class="p-3" v-if="notPushing" >
-            <ImageRow @click="imageClick" :key="amount" v-for="amount in Math.ceil(images.length / 3.0)" :images="images.slice((amount - 1) * 3, ((amount) * 3))" :amount="amount"></ImageRow>
+            <ImageRow @click="imageClick" @close="imageToEdit = null" :key="amount" v-for="amount in Math.ceil(images.length / 3.0)" :images="images.slice((amount - 1) * 3, ((amount) * 3))" :amount="amount"></ImageRow>
         </div>
-
+        <EditImageModal @saveText="saveText" @swapL="swapL" @swapR="swapR" @remove="remove" :mobile="mobile"></EditImageModal>
         <div v-if="uploading" class="progress mb-2">
             <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" :aria-valuenow="percent_done" aria-valuemin="0" aria-valuemax="100" :style="'width: ' + percent_done + '%'"></div>
         </div>
@@ -79,6 +78,7 @@
     import Tags from "../components/Tags";
     import * as env from '../assets/env';
     import Editor from "../components/Editor";
+    import EditImageModal from "../components/EditImageModal";
 
     const swalWithBootstrapButtons = Swal.mixin({
         customClass: {
@@ -91,7 +91,7 @@
 
     export default {
         name: "PostView.vue",
-        components: {Editor, Tags, ImageRow, DropboxChooser, OnedriveChooser},
+        components: {EditImageModal, Editor, Tags, ImageRow, DropboxChooser, OnedriveChooser},
         data: function(){
             return {
                 editor: null,
@@ -105,54 +105,40 @@
                 uploading: false,
                 percent_done: 0,
                 album:"",
-                notPushing: true
+                notPushing: true,
+                imageToEdit: null
             }
         },
-        props: ['user'],
+        props: ['user', 'mobile'],
         methods: {
-            async imageClick(image){
-                const { value: action } = await Swal.fire({
-                    title: 'Was willst du tun?',
-                    text: 'Bild...',
-                    input: 'select',
-                    inputOptions: {
-                        shiftL: 'nach links verschieben',
-                        shiftR: 'nach rechts verschieben',
-                        del: 'entfernen'
-                    },
-                    inputPlaceholder: 'Aktion auswählen',
-                    showCancelButton: true,
-                    cancelButtonText: 'Abbrechen',
-                    confirmButtonText: 'Durchführen',
-                    inputValidator: (value) => {
-                        return new Promise((resolve) => {
-                            if(value)
-                                resolve();
-                            else
-                                resolve("Bitte Aktion auswählen!");
-                        })
+            async saveText(filename, text){
+                for(const image of this.images){
+                    if(image.filename === filename){
+                        image.text = text;
+                        break;
                     }
-                });
-
-                const index = this.images.indexOf(image);
-                switch(action){
-                    case "del":
-                        this.images = this.images.filter((img) => img.filename !== image.filename);
-                        break;
-                    case "shiftL":
-                        if(index === 0) return;
-                        console.log(this.images);
-                        [this.images[index], this.images[index - 1]] = [this.images[index - 1], this.images[index]];
-                        this.images.push('dummpy');
-                        this.images.pop();
-                        break;
-                    case "shiftR":
-                        if(index >= this.images.length - 1) return;
-                        [this.images[index], this.images[index + 1]] = [this.images[index + 1], this.images[index]];
-                        this.images.push('dummpy');
-                        this.images.pop();
-                        break;
                 }
+            },
+            swapL(image){
+                console.log(image);
+                const index = this.images.indexOf(image);
+                if(index === 0) return;
+                [this.images[index], this.images[index - 1]] = [this.images[index - 1], this.images[index]];
+                this.images.push({});
+                this.images.pop();
+            },
+            swapR(image){
+                const index = this.images.indexOf(image);
+                if(index >= this.images.length - 1) return;
+                [this.images[index], this.images[index + 1]] = [this.images[index + 1], this.images[index]];
+                this.images.push({});
+                this.images.pop();
+            },
+            remove(image){
+                this.images = this.images.filter((img) => img.filename !== image.filename);
+            },
+            async imageClick(image){
+                this.$modal.show('EditImageModal',  {image});
             },
             selectFile(event){
                 if(event.target.files.length === 1)
@@ -161,9 +147,16 @@
             async addFromDropbox(files){
                 for(const file of files){
                     const src = file.link.replace('?dl=0', '?raw=1');
-                    const image = {src, filename: file.name, ...(await this.getMeta(src))};
+
+                    let {data: newImage} = await axios.post(env.backend_url + '/importFromDropbox', {url: src, token: localStorage.getItem('token')});
+                    if(!newImage.meta || !newImage.meta.exif || !newImage.meta.exif.ExifImageWidth || !newImage.meta.exif.ExifImageHeight){
+                        newImage = {...newImage, ...await this.getMeta(src)};
+                    } else {
+                        newImage.width = newImage.meta.exif.ExifImageWidth;
+                        newImage.height = newImage.meta.exif.ExifImageHeight;
+                    }
                     this.notPushing = false;
-                    this.images.push(image);
+                    this.images.push(newImage);
                     this.notPushing = true;
                 }
             },
@@ -179,12 +172,12 @@
                     this.percent_done = (data.loaded / data.total) * 100;
                 }})
                 .then(async ({data}) => {
-                    const {valid, url, filename} = data;
+                    const {valid, src, filename, thumbnail_url} = data;
                     if(!valid){
                         //TODO
                         return;
                     }
-                    const image = {src: url, filename, ...(await this.getMeta(url))};
+                    const image = {src, filename, thumbnail_url, ...(await this.getMeta(src))};
                     this.notPushing = false;
                     this.images.push(image);
                     this.notPushing = true;
@@ -219,6 +212,15 @@
                     img.onload = () => resolve({height: img.height, width: img.width});
                     img.onerror = reject;
                     img.src = url;
+                });
+            },
+            sortImages(){
+                this.images = this.images.sort((a, b) => {
+                    if(!a.exif)
+                        return 0;
+                    if(!b.exif)
+                        return 1;
+
                 });
             }
         },

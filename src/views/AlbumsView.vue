@@ -3,9 +3,11 @@
         <div v-if="!albumOpen" class="d-flex flex-wrap overflow-auto justify-content-center align-content-center">
             <Album v-for="album in albums" @open="openAlbum" :key="album" :image="previews[album]" :name="album"></Album>
         </div>
-        <div v-if="albumOpen" v-viewer>
+        <div v-if="albumOpen">
             <a @click="closeAlbum" class="btn btn-info m-3"><i class="fas fa-angle-left"></i> zurück</a>
-            <Post :user="user" :key="index" :post="post" v-for="(post, index) of openAlbumPosts"></Post>
+            <div v-viewer>
+                <Post :user="user" :key="index" :post="post" v-for="(post, index) of openAlbumPosts"></Post>
+            </div>
             <a @click="closeAlbum" class="btn btn-info mb-3"><i class="fas fa-angle-left"></i> zurück</a>
         </div>
     </div>

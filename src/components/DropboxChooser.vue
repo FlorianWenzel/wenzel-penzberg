@@ -16,7 +16,6 @@ import Swal from "sweetalert2";
             open: function(event){
                 let options =
                     {
-                        // Required. Called when a user selects an item in the Chooser.
                         success: async files => {
                             this.$emit('addFromDropbox', files);
                         },

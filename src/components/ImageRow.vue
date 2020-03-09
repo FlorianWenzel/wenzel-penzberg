@@ -1,7 +1,7 @@
 <template>
-    <div  class="d-flex align-content-center w-100 imagerow">
-        <div :key="image.filename" v-for="(image, index) in images" class="align-self-center" :style="widths[index]">
-            <img :src="image.src" @load="loadImage"  @click="click(image)" alt="" class="w-100 h-100"/>
+    <div  :class="'w-100 imagerow ' + (!mobile ? 'd-flex align-content-center' : '')">
+        <div :key="image.filename" v-for="(image, index) in images" class="img-wrapper align-self-center overflow-hidden" :style="widths[index]">
+            <img :src="image.src" @load="loadImage" @click="click(image)" :style="getBackground(image)" :alt="image.text ? image.text : ' '" class="w-100 h-100"/>
         </div>
     </div>
 </template>
@@ -14,12 +14,13 @@
             return {
                 widths: [],
                 widestImage: null,
+                mobile: true,
             }
         },
         methods: {
             getWidth(index){
                 if(window.innerWidth < 500){
-                    return 'col-12 p-2';
+                    return 'height: auto; width: 100%;';
                 }
                 const ratio = [];
                 const imageWithHighestRatio = { ratio:0 };
@@ -43,6 +44,10 @@
             },
             loadImage(event){
                 event.target.classList.add('loaded');
+                this.$emit('imageLoad', event);
+            },
+            getBackground(image){
+                return `background-image: url('${image.thumbnail_url}')`;
             }
         },
         watch: {
@@ -54,6 +59,9 @@
             }
         },
         created() {
+            if(window.innerWidth > 500){
+                this.mobile = false;
+            }
             for(const index in this.images){
                 this.widths.push(this.getWidth(index));
             }
@@ -62,6 +70,9 @@
 </script>
 
 <style scoped>
+    .img-wrapper {
+        border: solid thin white;
+    }
     img:hover{
         cursor: pointer;
     }
@@ -69,10 +80,10 @@
         background-size: cover;
         background-position: center;
         background-color: #363636;
-        border: solid thin white;
+        filter: blur(10px);
     }
     img.loaded {
-        transition: .3s filter linear;
+        transition: .3s filter  linear;
         filter: blur(0px);
     }
     .imagerow>div:first-child>img{

@@ -21,12 +21,7 @@ const routes = [
     component: () => import('../views/PostView.vue')
   },
   {
-    path: '/alben/',
-    name: 'Alben',
-    component: () => import('../views/AlbumsView.vue')
-  },
-  {
-    path: '/alben/:name',
+    path: '/alben/*',
     name: 'Ablum',
     component: () => import('../views/AlbumsView.vue')
   },

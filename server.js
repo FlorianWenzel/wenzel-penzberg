@@ -15,6 +15,7 @@ const ExifImage = require('exif').ExifImage;
 const axios = require('axios');
 const path = require('path');
 const uuid = require('uuid/v4');
+const ObjectId = require('mongodb').ObjectId;
 
 app.use(bodyParser.json());
 let db;
@@ -239,14 +240,19 @@ app.get('/posts', async (req, res) => {
     res.send(result);
 });
 app.post('/post', async (req, res) => {
-    const {title, images, tags, text, publicity, timestamp, parent, album} = req.body;
+    const {title, images, tags, text, publicity, timestamp, parent, album, id} = req.body;
     const user = await db.users.findOne({token: parent});
     if(!user || user.permissions.post !== true){
         res.sendStatus(666);
         return;
     }
+    if(id){
+        const _id = ObjectId(id);
+        const res = await db.posts.updateOne({_id},{$set: {title, images, tags, text, publicity, timestamp, parent, album}});
+    }else{
+        await db.posts.insertOne({title, images, tags, text, publicity, timestamp, parent, album});
 
-    const result = await db.posts.insertOne({title, images, tags, text, publicity, timestamp, parent, album});
+    }
     res.send({valid: true});
 });
 app.get('*', async (req, res) => {

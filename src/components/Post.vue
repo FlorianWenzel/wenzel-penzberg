@@ -6,7 +6,10 @@
             <small>{{new Date(post.timestamp).toLocaleDateString()}}<span v-if="post.author"> - {{post.author.username}}</span></small>
             <div>
                 <span v-bind:key="tag" v-for="tag of post.tags" class="badge badge-primary mr-1">{{tag}}</span>
-                <span v-if="user && user.admin" class="badge badge-info">{{getPublicityString(post.publicity)}}</span>
+                <span v-if="user && user.admin" class="badge badge-info mr-1">{{getPublicityString(post.publicity)}}</span>
+                <a @click="edit(post)">
+                    <i v-if="user && user.permissions.post" class="fas fa-edit"></i>
+                </a>
             </div>
             <p v-html="post.text" class="pt-3">
             </p>
@@ -35,6 +38,10 @@
                     case 'family':
                         return 'Familie';
                 }
+            },
+            edit(post){
+                this.$emit('editPost', post);
+                this.$router.push('/neuer-beitrag/?id=' +post._id);
             }
         }
     }

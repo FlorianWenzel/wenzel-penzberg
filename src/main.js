@@ -15,7 +15,8 @@ Vue.use(Viewer, {
     title: [true, (image) => {
       return image.alt;
     }],
-    navbar: 3,
+    loop: false,
+    navbar: false,
     tooltip: false,
     toolbar: {
       reset: 3,
@@ -40,5 +41,5 @@ Vue.config.productionTip = false;
 
 new Vue({
   router,
-  render: h => h(App)
+  render: h => h(App),
 }).$mount('#app')

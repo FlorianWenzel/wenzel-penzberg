@@ -12,7 +12,7 @@
 <script>
     export default {
         name: "Album",
-        props: ['image', 'name'],
+        props: ['image', 'name', 'path'],
         methods: {
             open(){
                 this.$emit('open', this.name);

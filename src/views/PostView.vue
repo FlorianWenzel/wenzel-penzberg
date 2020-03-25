@@ -36,7 +36,7 @@
         <div class="form-row">
             <div class="col-md-12 mb-3">
                 <div class="form-group">
-                    <Editor v-model="text"></Editor>
+                    <Editor v-model="text" :text="text"></Editor>
                 </div>
             </div>
         </div>
@@ -94,13 +94,14 @@
         components: {EditImageModal, Editor, Tags, ImageRow, DropboxChooser, OnedriveChooser},
         data: function(){
             return {
+                id: '',
                 editor: null,
                 title: null,
                 images: [],
                 tags: [],
                 text: "",
                 publicity: "",
-                timestamp: null,
+                timestamp: Date.now(),
                 selectedFile: {name:"Bild auswählen"},
                 uploading: false,
                 percent_done: 0,
@@ -109,7 +110,7 @@
                 imageToEdit: null
             }
         },
-        props: ['user', 'mobile'],
+        props: ['user', 'mobile', 'postToEdit'],
         methods: {
             async saveText(filename, text){
                 for(const image of this.images){
@@ -120,7 +121,6 @@
                 }
             },
             swapL(image){
-                console.log(image);
                 const index = this.images.indexOf(image);
                 if(index === 0) return;
                 [this.images[index], this.images[index - 1]] = [this.images[index - 1], this.images[index]];
@@ -193,15 +193,15 @@
                     swalWithBootstrapButtons.fire('Geduld!', 'Bitte warte bis der Upload abgeschlossen ist', 'error');
                     return;
                 }
-                const {title, images, tags, text, publicity, album} = this;
-                const post = {title, images, tags, text, publicity, album, timestamp: Date.now(), parent: localStorage.getItem('token')};
+                const {title, images, tags, text, publicity, album, id, timestamp} = this;
+                const post = {title, images, tags, text, publicity, album, id, timestamp, parent: localStorage.getItem('token')};
                 axios.post( env.backend_url + '/post', post)
                 .then(({data}) => {
                     const {valid} = data;
                     if(!valid)
                         console.log('not valid...');
                     else{
-                        swalWithBootstrapButtons.fire('Erstellt!', 'Post wurde erstellt', 'success');
+                        swalWithBootstrapButtons.fire('Erstellt!', 'Beitrag wurde erstellt', 'success');
                         this.$router.push('/');
                     }
                 })
@@ -213,15 +213,6 @@
                     img.onerror = reject;
                     img.src = url;
                 });
-            },
-            sortImages(){
-                this.images = this.images.sort((a, b) => {
-                    if(!a.exif)
-                        return 0;
-                    if(!b.exif)
-                        return 1;
-
-                });
             }
         },
         created(){
@@ -229,6 +220,20 @@
             if(!token){
                 this.$router.push('/');
             }
+        },
+        mounted() {
+            if(!window.location.href.includes('?id=')){
+                return;
+            }
+            this.id = window.location.href.split('?id=')[1];
+
+            if(!(this.postToEdit && this.postToEdit._id === this.id))
+                return;
+
+            for(const key in this.postToEdit){
+                this[key] = this.postToEdit[key];
+            }
+            this.text += ' ';
         }
     }
 </script>

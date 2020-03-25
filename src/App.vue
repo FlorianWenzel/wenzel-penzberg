@@ -3,7 +3,7 @@
   <div id="app" >
     <Navbar  @login="login" :mobile="mobile" :user="user"></Navbar>
     <div id="content">
-      <router-view :user="user" :mobile="mobile"></router-view>
+      <router-view :user="user" @editPost="editPost" :postToEdit="postToEdit" :mobile="mobile"></router-view>
     </div>
   </div>
 </template>
@@ -17,7 +17,8 @@
     data: () => {
       return {
         user: null,
-        mobile: false
+        mobile: false,
+        postToEdit: null
       }
     },
     components: {
@@ -28,6 +29,9 @@
         this.user = user;
         localStorage.setItem('token', user.token);
         window.location.reload();
+      },
+      editPost(post){
+        this.postToEdit = post;
       }
     },
     created() {

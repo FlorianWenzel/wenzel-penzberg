@@ -55,12 +55,12 @@ export default {
                     return;
                 }
             }
-            if(this.amountToDisplay + 10 > this.posts.length){
+            if(this.amountToDisplay + 3 > this.posts.length){
                 this.amountToDisplay = this.posts.length;
                 $state.complete();
 
             }else{
-                this.amountToDisplay += 10;
+                this.amountToDisplay += 3;
                 $state.loaded();
             }
       },

@@ -4,9 +4,9 @@
             <Album v-for="name in displayedAlbums" :path="path" @open="openAlbum" :key="name" :image="previews[name]" :name="name"></Album>
         </div>
         <a v-if="path !== ''" @click="closeAlbum" class="btn btn-info m-3"><i class="fas fa-angle-left"></i> zurück</a>
-        <div v-viewer ref="viewer">
+        <div id="lightgallery">
             <div v-if="!refreshingAlbum && postsByAlbum[path]">
-                    <Post @editPost="editPost" :user="user" :key="index" :post="post" v-for="(post, index) in postsByAlbum[path]"></Post>
+                <Post @rendered="postRendered" @editPost="editPost" :user="user" :key="index" :post="post" v-for="(post, index) in postsByAlbum[path]"></Post>
                 <infinite-loading @infinite="infiniteHandler">
                     <div slot="no-more"></div>
                     <div slot="no-results"></div>
@@ -43,6 +43,8 @@
                 openAlbumAllImages: [],
                 infiniteState: null,
                 path: '',
+                reopenAt: null,
+                timeout: null,
             }
         },
         methods: {
@@ -73,13 +75,14 @@
                         return;
                     }
                 }
-                if(this.openAlbumAmountOfPosts + 3 > this.postsByAlbum[this.path].length){
+                if(this.openAlbumAmountOfPosts + 10 > this.postsByAlbum[this.path].length){
                     this.openAlbumAmountOfPosts = this.openAlbumAmountOfPosts.length;
                     $state.complete();
 
                 }else{
-                    this.openAlbumAmountOfPosts += 3;
-                    $state.loaded();
+                    this.openAlbumAmountOfPosts += 10;
+                    if($state)
+                        $state.loaded();
                 }
             },
             async loadPosts(){
@@ -128,6 +131,31 @@
             },
             editPost(post){
                 this.$emit('editPost', post);
+            },
+            postRendered(){
+                clearTimeout(this.timeout);
+                this.timeout = setTimeout(this.loadLightGallery, 1000);
+            },
+            async loadLightGallery(){
+                if(window.lgData[document.getElementById('lightgallery').getAttribute('lg-uid')]){
+                    await window.lgData[document.getElementById('lightgallery').getAttribute('lg-uid')].destroy(true);
+                }
+                window.lightGallery(document.getElementById('lightgallery'), {
+                    counter: false,
+                    download: true,
+                    fullscreen: true,
+                    thumbnail: false,
+                    selector: '.img-wrapper'
+                });
+                if(this.reopenAt){
+                    setTimeout(() => {
+                        if(this.reopenAt){
+                            document.querySelectorAll('.img-wrapper')[this.reopenAt - 1].click();
+                            this.reopenAt = null;
+                        }
+                    }, 1000)
+                }
+
             }
         },
         watch:{
@@ -136,7 +164,6 @@
             }
         },
         created() {
-            _this = this;
             window.addEventListener('popstate', () => {
                 if(_this && _this.albumOpen)
                     _this.albumOpen = false;
@@ -148,14 +175,16 @@
             };
         },
         mounted() {
-            this.$refs.viewer.addEventListener('view', async (event) => {
-                event.detail.originalImage.scrollIntoView();
-                const {index} = event.detail;
-                const amountOfImagesDisplayed = this.$refs.viewer.viewer.images.length - 1;
-                if(index === amountOfImagesDisplayed){
-                    await this.infiniteHandler(this.infiniteState);
+            _this = this;
+            document.getElementById('lightgallery').addEventListener('onAfterSlide', (event) => {
+                let amountOfDisplayedImages = 0;
+                for(let index = 0; index < _this.amountToDisplay; index++){
+                    amountOfDisplayedImages += _this.posts[index].images.length;
                 }
-
+                if(event.detail.index + 2 > amountOfDisplayedImages){
+                    _this.reopenAt = event.detail.index;
+                    _this.infiniteHandler(_this.infiniteState);
+                }
             })
         }
     }

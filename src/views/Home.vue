@@ -1,11 +1,13 @@
 <template>
-  <div class="home" v-viewer ref="viewer">
-      <Post @editPost="editPost" :user="user" :post="posts[index - 1]" :key="index" v-for="index in amountToDisplay"></Post>
-      <infinite-loading @infinite="infiniteHandler">
-          <div slot="no-more"></div>
-          <div slot="no-results"></div>
-      </infinite-loading>
-  </div>
+    <div class="home">
+        <div id="lightgallery">
+            <Post @editPost="editPost" @rendered="postRendered" :user="user" :post="posts[index - 1]" :key="index" v-for="index in amountToDisplay"></Post>
+        </div>
+        <infinite-loading @infinite="infiniteHandler">
+            <div slot="no-more"></div>
+            <div slot="no-results"></div>
+        </infinite-loading>
+    </div>
 </template>
 <style scoped>
     .info {
@@ -26,6 +28,7 @@ import axios from 'axios';
 import * as env from '../assets/env';
 import Post from "../components/Post";
 import InfiniteLoading from 'vue-infinite-loading';
+let _this;
 
 export default {
     name: 'Home',
@@ -37,6 +40,8 @@ export default {
             amountToDisplay: 0,
             allImages: [],
             infiniteState: null,
+            reopenAt: null,
+            timeout: null
         }
     },
     methods: {
@@ -51,30 +56,58 @@ export default {
                         return data;
                     });
                 if(this.posts.length === 0){
-                    $state.complete()
+                    $state.complete();
                     return;
                 }
             }
-            if(this.amountToDisplay + 3 > this.posts.length){
+            if(this.amountToDisplay + 10 > this.posts.length){
                 this.amountToDisplay = this.posts.length;
                 $state.complete();
 
             }else{
-                this.amountToDisplay += 3;
+                this.amountToDisplay += 10;
                 $state.loaded();
             }
       },
         editPost(post){
             this.$emit('editPost', post);
+        },
+        postRendered(){
+            clearTimeout(this.timeout);
+            this.timeout = setTimeout(this.loadLightGallery, 1000);
+        },
+        async loadLightGallery(){
+            if(window.lgData[document.getElementById('lightgallery').getAttribute('lg-uid')]){
+                await window.lgData[document.getElementById('lightgallery').getAttribute('lg-uid')].destroy(true);
+            }
+            window.lightGallery(document.getElementById('lightgallery'), {
+                counter: false,
+                download: true,
+                fullscreen: true,
+                thumbnail: false,
+                selector: '.img-wrapper'
+            });
+            if(this.reopenAt){
+                setTimeout(() => {
+                    if(this.reopenAt){
+                        document.querySelectorAll('.img-wrapper')[this.reopenAt - 1].click();
+                        this.reopenAt = null;
+                    }
+                }, 1000)
+            }
+
         }
     },
     mounted() {
-        this.$refs.viewer.addEventListener('view', async (event) => {
-            event.detail.originalImage.scrollIntoView();
-            const {index} = event.detail;
-            const amountOfImagesDisplayed = this.$refs.viewer.viewer.images.length - 1;
-            if(index === amountOfImagesDisplayed){
-                await this.infiniteHandler(this.infiniteState);
+        _this = this;
+        document.getElementById('lightgallery').addEventListener('onAfterSlide', (event) => {
+            let amountOfDisplayedImages = 0;
+            for(let index = 0; index < _this.amountToDisplay; index++){
+                amountOfDisplayedImages += _this.posts[index].images.length;
+            }
+            if(event.detail.index + 2 > amountOfDisplayedImages){
+                _this.reopenAt = event.detail.index;
+                _this.infiniteHandler(_this.infiniteState);
             }
         })
     }

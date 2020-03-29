@@ -1,6 +1,6 @@
 <template>
     <div  :class="'w-100 imagerow ' + (!mobile ? 'd-flex align-content-center' : '')">
-        <div :key="image.filename" v-for="(image, index) in images" class="img-wrapper align-self-center overflow-hidden" :style="widths[index]">
+        <div :key="image.filename" :data-sub-html="image.text" :data-src="image.src" v-for="(image, index) in images" class="img-wrapper align-self-center overflow-hidden" :style="widths[index]">
             <img :src="image.src" @load="loadImage" @click="click(image)" :style="getBackground(image)" :alt="image.text ? image.text : ' '" class="w-100 h-100"/>
         </div>
     </div>

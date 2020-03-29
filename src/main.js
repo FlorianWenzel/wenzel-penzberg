@@ -2,13 +2,15 @@ import Vue from 'vue';
 import App from './App.vue';
 import VueRouter from 'vue-router';
 import router from './router';
-import Vue2TouchEvents from 'vue2-touch-events';
 import 'viewerjs/dist/viewer.css';
 import Viewer from 'v-viewer';
 import VModal from 'vue-js-modal';
-import VueResize from 'vue-resize'
+import 'lightgallery.js';
+import 'lightgallery.js/dist/css/lightgallery.css';
+import 'lg-autoplay.js';
+import 'lg-fullscreen.js';
+import 'lg-zoom.js';
 
-Vue.use(VueResize);
 Vue.use(VModal);
 Vue.use(Viewer, {
   defaultOptions: {
@@ -35,7 +37,6 @@ Vue.use(Viewer, {
   }
 });
 
-Vue.use(Vue2TouchEvents);
 Vue.use(VueRouter);
 Vue.config.productionTip = false;
 

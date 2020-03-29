@@ -1,6 +1,7 @@
 .DS_Store
-.env.js
+env.js
 .idea
+
 uploads
 node_modules
 /dist

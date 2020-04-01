@@ -6,7 +6,7 @@
         <a v-if="path !== ''" @click="closeAlbum" class="btn btn-info m-3"><i class="fas fa-angle-left"></i> zurück</a>
         <div v-if="!refreshingAlbum && postsByAlbum[path]">
             <Post @editPost="editPost" @imageClick="imageClick" :user="user" :key="index" :post="postsByAlbum[path][index - 1]" v-for="(index) in openAlbumAmountOfPosts"></Post>
-            <Zoom :images="openAlbumAllImages" :i="openIndex" @close="openIndex = -1"></Zoom>
+            <Zoom :mobile="mobile" :images="openAlbumAllImages" :i="openIndex" @close="openIndex = -1"></Zoom>
             <infinite-loading @infinite="infiniteHandler">
                 <div slot="no-more"></div>
                 <div slot="no-results"></div>
@@ -29,7 +29,7 @@
     export default {
         name: "AlbumsView.vue",
         components: {Zoom, Post, InfiniteLoading, Album},
-        props: ["user"],
+        props: ["user", "mobile"],
         data(){
             return {
                 posts: [],

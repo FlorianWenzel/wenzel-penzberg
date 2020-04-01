@@ -1,7 +1,7 @@
 <template>
     <div class="home">
         <div>
-            <Zoom :images="allImages" :i="openIndex" @close="openIndex = -1"></Zoom>
+            <Zoom :mobile="mobile" :images="allImages" :i="openIndex" @close="openIndex = -1"></Zoom>
             <Post @editPost="editPost" @imageClick="imageClick" :user="user" :post="posts[index - 1]" :key="index" v-for="index in amountToDisplay"></Post>
         </div>
         <infinite-loading @infinite="infiniteHandler">
@@ -20,7 +20,7 @@ import Zoom from "../components/Zoom";
 export default {
     name: 'Home',
     components: {Zoom, Post, InfiniteLoading},
-    props: ["user"],
+    props: ["user", "mobile"],
     data: function(){
         return {
             posts: [],

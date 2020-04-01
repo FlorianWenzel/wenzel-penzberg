@@ -1,6 +1,6 @@
 <template>
     <nav class="navbar bg-info navbar-dark position-sticky text-light">
-        <a class="navbar-brand text-light">Familie Wenzel</a>
+        <a class="navbar-brand text-light" href="/">Familie Wenzel</a>
 
         <router-link to="/"><i class="fa fa-images text-light"></i><span v-if="!mobile" class="text-light"> Alle Bilder</span></router-link>
         <span>|</span>

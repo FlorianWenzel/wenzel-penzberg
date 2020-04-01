@@ -1,6 +1,6 @@
 <template>
     <div class="pb-5">
-        <ImageRow @imageLoad="imageRowMounted" :key="amount" @mounted="imageRowMounted" @click="imageClick" v-for="amount in Math.ceil(post.images.length / 3.0)" :images="post.images.slice((amount - 1) * 3, ((amount) * 3))" :amount="amount"></ImageRow>
+        <ImageRow class="postImageRow" @imageLoad="imageRowMounted" :key="amount" @mounted="imageRowMounted" @click="imageClick" v-for="amount in Math.ceil(post.images.length / 3.0)" :images="post.images.slice((amount - 1) * 3, ((amount) * 3))" :amount="amount"></ImageRow>
         <div class="info mx-3 mb-3 p-3 pb-5">
             <h1>{{post.title}}</h1>
             <small>{{new Date(post.timestamp).toLocaleDateString()}}<span v-if="post.author"> - {{post.author.username}}</span></small>

@@ -4,15 +4,14 @@
             <Album v-for="name in displayedAlbums" :path="path" @open="openAlbum" :key="name" :image="previews[name]" :name="name"></Album>
         </div>
         <a v-if="path !== ''" @click="closeAlbum" class="btn btn-info m-3"><i class="fas fa-angle-left"></i> zurück</a>
-        <div id="lightgallery">
-            <div v-if="!refreshingAlbum && postsByAlbum[path]">
-                <Post @rendered="postRendered" @editPost="editPost" :user="user" :key="index" :post="post" v-for="(post, index) in postsByAlbum[path]"></Post>
-                <infinite-loading @infinite="infiniteHandler">
-                    <div slot="no-more"></div>
-                    <div slot="no-results"></div>
-                </infinite-loading>
-                <a @click="closeAlbum" class="btn btn-info mb-3"><i class="fas fa-angle-left"></i> zurück</a>
-            </div>
+        <div v-if="!refreshingAlbum && postsByAlbum[path]">
+            <Post @editPost="editPost" @imageClick="imageClick" :user="user" :key="index" :post="postsByAlbum[path][index - 1]" v-for="(index) in openAlbumAmountOfPosts"></Post>
+            <Zoom :images="openAlbumAllImages" :i="openIndex" @close="openIndex = -1"></Zoom>
+            <infinite-loading @infinite="infiniteHandler">
+                <div slot="no-more"></div>
+                <div slot="no-results"></div>
+            </infinite-loading>
+            <a @click="closeAlbum" class="btn btn-info mb-3"><i class="fas fa-angle-left"></i> zurück</a>
         </div>
     </div>
 
@@ -24,11 +23,12 @@
     import * as env from '../assets/env';
     import Post from "../components/Post";
     import InfiniteLoading from 'vue-infinite-loading';
+    import Zoom from "../components/Zoom";
     let _this;
 
     export default {
         name: "AlbumsView.vue",
-        components: {Post, InfiniteLoading, Album},
+        components: {Zoom, Post, InfiniteLoading, Album},
         props: ["user"],
         data(){
             return {
@@ -41,10 +41,9 @@
                 openAlbumAmountOfPosts: 0,
                 refreshingAlbum: false,
                 openAlbumAllImages: [],
-                infiniteState: null,
                 path: '',
-                reopenAt: null,
-                timeout: null,
+                infiniteState: null,
+                openIndex: -1,
             }
         },
         methods: {
@@ -54,7 +53,13 @@
                     this.path += '/';
                 this.path += album;
                 if(!location.pathname.includes(this.path))
-                    history.pushState(null, this.path, this.path);
+                    history.pushState(null, this.path, '/alben/' + this.path);
+                this.openAlbumAllImages = [];
+                for(const post of this.posts){
+                    if(post.album === this.path){
+                        Array.prototype.push.apply(this.openAlbumAllImages, post.images);
+                    }
+                }
                 this.refreshingAlbum = false;
             },
             closeAlbum(){
@@ -75,12 +80,12 @@
                         return;
                     }
                 }
-                if(this.openAlbumAmountOfPosts + 10 > this.postsByAlbum[this.path].length){
-                    this.openAlbumAmountOfPosts = this.openAlbumAmountOfPosts.length;
+                if(this.openAlbumAmountOfPosts + 5 > this.postsByAlbum[this.path].length){
+                    this.openAlbumAmountOfPosts = this.postsByAlbum[this.path].length;
                     $state.complete();
 
                 }else{
-                    this.openAlbumAmountOfPosts += 10;
+                    this.openAlbumAmountOfPosts += 5;
                     if($state)
                         $state.loaded();
                 }
@@ -112,7 +117,9 @@
             },
             async syncDisplayedAlbums(){
                 const path = this.path;
-                const relevant = this.albums.filter(album => (album.includes(path) && album !== path));
+                let relevant = this.albums;
+                if(path)
+                    relevant = this.albums.filter(album => album.includes(path + '/'));
                 this.displayedAlbums = [...new Set(relevant.map(album => {
                     const replaced = path !== '' ? album.replace(path + '/', '') : album;
                     return replaced.split('/')[0]
@@ -132,30 +139,8 @@
             editPost(post){
                 this.$emit('editPost', post);
             },
-            postRendered(){
-                clearTimeout(this.timeout);
-                this.timeout = setTimeout(this.loadLightGallery, 1000);
-            },
-            async loadLightGallery(){
-                if(window.lgData[document.getElementById('lightgallery').getAttribute('lg-uid')]){
-                    await window.lgData[document.getElementById('lightgallery').getAttribute('lg-uid')].destroy(true);
-                }
-                window.lightGallery(document.getElementById('lightgallery'), {
-                    counter: false,
-                    download: true,
-                    fullscreen: true,
-                    thumbnail: false,
-                    selector: '.img-wrapper'
-                });
-                if(this.reopenAt){
-                    setTimeout(() => {
-                        if(this.reopenAt){
-                            document.querySelectorAll('.img-wrapper')[this.reopenAt - 1].click();
-                            this.reopenAt = null;
-                        }
-                    }, 1000)
-                }
-
+            imageClick(image){
+                this.openIndex = this.openAlbumAllImages.indexOf(image);
             }
         },
         watch:{
@@ -170,22 +155,11 @@
             });
             this.loadPosts();
             window.onpopstate = () => {
-                //TODO handle this stuff
-                console.log('pop state detected..')
+                window.location.reload();
             };
         },
         mounted() {
             _this = this;
-            document.getElementById('lightgallery').addEventListener('onAfterSlide', (event) => {
-                let amountOfDisplayedImages = 0;
-                for(let index = 0; index < _this.amountToDisplay; index++){
-                    amountOfDisplayedImages += _this.posts[index].images.length;
-                }
-                if(event.detail.index + 2 > amountOfDisplayedImages){
-                    _this.reopenAt = event.detail.index;
-                    _this.infiniteHandler(_this.infiniteState);
-                }
-            })
         }
     }
 </script>

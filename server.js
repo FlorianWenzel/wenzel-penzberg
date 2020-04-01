@@ -1,6 +1,5 @@
 const app = require('express')();
 const http = require('http').createServer(app);
-const io = require('socket.io')(http);
 const url = 'mongodb://localhost:27017';
 const MongoClient = require('mongodb').MongoClient(url,{ useUnifiedTopology: true });
 const bcrypt = require('bcryptjs');
@@ -257,10 +256,6 @@ app.post('/post', async (req, res) => {
 });
 app.get('*', async (req, res) => {
     res.sendFile(__dirname + '/dist/index.html');
-});
-
-io.on('connection', function(socket){
-    console.log('a user connected');
 });
 
 http.listen(3000, function(){

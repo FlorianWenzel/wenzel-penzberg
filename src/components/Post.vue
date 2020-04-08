@@ -31,6 +31,8 @@
                 switch (publicity) {
                     case 'public':
                         return 'Öffentlich';
+                    case 'other':
+                        return 'Die Anderen';
                     case 'extended':
                         return 'Entferntere Verwandschaft';
                     case 'close':

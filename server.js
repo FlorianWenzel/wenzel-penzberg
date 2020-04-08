@@ -7,7 +7,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const multerConfig = require("./multer.js");
 const jwt = require('jsonwebtoken');
-const { exec } = require('child_process')
+const { exec } = require('child_process');
 const fs = require('fs');
 const env = require('./src/assets/env');
 const ExifImage = require('exif').ExifImage;
@@ -220,6 +220,8 @@ app.get('/posts', async (req, res) => {
         Array.prototype.push.apply(posts, await (await db.posts.find({publicity: 'close'})).toArray());
     if(user && (user.publicity === 'family' || user.publicity === 'close'|| user.publicity === 'extended'))
         Array.prototype.push.apply(posts, await (await db.posts.find({publicity: 'extended'})).toArray());
+    if(user && (user.publicity === 'family' || user.publicity === 'close'|| user.publicity === 'extended' || user.publicity === 'other'))
+        Array.prototype.push.apply(posts, await (await db.posts.find({publicity: 'other'})).toArray());
 
     posts = posts.sort((a, b) => {
         if(a.timestamp < b.timestamp) return 1;

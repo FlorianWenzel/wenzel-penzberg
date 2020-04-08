@@ -51,6 +51,7 @@
                 <select id="publicity" v-model="publicity" class="custom-select" name="publicity" required>
                     <option value="">Bitte auswählen...</option>
                     <option value="public">Öffentlich</option>
+                    <option value="other">Die Anderen</option>
                     <option value="extended">Entfernetere Verwandschaft</option>
                     <option value="close">Nähere Verwandschaft</option>
                     <option value="family">Familie</option>

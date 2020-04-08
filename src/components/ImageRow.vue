@@ -1,7 +1,7 @@
 <template>
     <div  :class="'w-100 imagerow ' + (!mobile ? 'd-flex align-content-center' : '')">
         <div :key="image.filename" :data-sub-html="image.text" :data-src="image.src" v-for="(image, index) in images" class="img-wrapper align-self-center overflow-hidden" :style="widths[index]">
-            <img :src="image.thumbnail_url" :id="image.filename" @click="click(image)" :alt="image.text ? image.text : ' '" class="h-100 w-100">
+            <img :src="image.thumbnail_url" :id="image.filename" @click="click(image)" :alt="image.text ? image.text : ' '" class="h-100">
             <img :src="image.src" @load="loadImage(image)" @click="click(image)" :style="getBackground(image)" :alt="image.text ? image.text : ' '" class="h-100"/>
         </div>
     </div>

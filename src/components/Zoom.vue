@@ -12,7 +12,8 @@
         <div class="close" @click="close">
             <i class="fas fa-times text-light"></i>
         </div>
-        <div v-if="images[index].text" class="text">{{images[index].text}}</div>
+        <div v-if="images[index].text && !displayText" @click="showText" class="showText"><i class="fas fa-angle-up fa-2x text-light"></i></div>
+        <div v-if="images[index].text && displayText" v-touch:swipe.bottom="hideText" @click="hideText" class="text">{{images[index].text}}</div>
         <div v-if="images.length !== 1 && !(isTouch() && mobile)" @click="next" class="next"><i class="fas fa-angle-right fa-2x text-light"></i></div>
     </div>
 </template>
@@ -29,7 +30,8 @@
                 index: null,
                 interval: null,
                 playing: false,
-                progressValue: 0
+                progressValue: 0,
+                displayText: true
             }
         },
         props: ["images", "i", "mobile"],
@@ -84,14 +86,20 @@
                     this.playing = false;
                 }else{
                     this.interval = setInterval(() => {
-                        zoom.progressValue += 1;
+                        zoom.progressValue += .5;
                         if(zoom.progressValue >= 100){
                             zoom.progressValue = 0;
                             zoom.next();
                         }
-                    }, 50);
+                    }, 25);
                     this.playing = true;
                 }
+            },
+            showText(){
+                this.displayText = true;
+            },
+            hideText(){
+                this.displayText = false;
             },
             swipe(direction){
                 if(direction === 'left'){
@@ -141,7 +149,7 @@
         top: 1rem;
     }
     .prev {
-        padding: 16px;
+        padding: 16px 8px 16px 8px;
         background: rgba(54, 54, 54, .6);
         position: fixed;
         left: 0;
@@ -149,8 +157,8 @@
         height: 64px!important;
     }
     .play {
-        padding: 16px;
-        line-height: 16px;
+        padding: 8px;
+        line-height: 8px;
         background: rgba(54, 54, 54, .6);
         position: fixed;
         left: calc(50vw - 23px);
@@ -158,7 +166,7 @@
         height: 64px!important;
     }
     .next {
-        padding: 16px;
+        padding: 16px 8px 16px 8px;
         background: rgba(54, 54, 54, .6);
         position: fixed;
         right: 0;
@@ -166,7 +174,7 @@
         height: 64px!important;
     }
     .text{
-        padding: 16px;
+        padding: 8px;
         line-height: 16px;
         background: rgba(54, 54, 54, .6);
         position: fixed;
@@ -184,7 +192,15 @@
         z-index: 103;
 
     }
-
+    .showText {
+        padding: 8px;
+        line-height: 8px;
+        background: rgba(54, 54, 54, .6);
+        position: fixed;
+        bottom: 0;
+        left: calc(50vw - 23px);
+        color: white;
+    }
     .progress > .progress-bar{
         transition: none!important;
     }

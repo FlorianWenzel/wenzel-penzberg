@@ -5,6 +5,7 @@
         @click="imageClick"
         @close="imageToEdit = null"
         :key="amount"
+        class="postImageRow"
         v-for="amount in Math.ceil(images.length / 3.0)"
         :images="images.slice((amount - 1) * 3, amount * 3)"
         :amount="amount"

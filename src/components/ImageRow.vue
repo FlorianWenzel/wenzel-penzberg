@@ -80,8 +80,11 @@
 
 <style scoped>
     .postImageRow>.img-wrapper {
-        border: solid thin white;
+        border: solid .5rem white;
     }
+    .img-wrapper {
+         border: solid 0rem transparent;
+     }
     img:hover{
         cursor: pointer;
     }

@@ -3,7 +3,7 @@
         <ImageRow class="postImageRow" @imageLoad="imageRowMounted" :key="amount" @mounted="imageRowMounted" @click="imageClick" v-for="amount in Math.ceil(post.images.length / 3.0)" :images="post.images.slice((amount - 1) * 3, ((amount) * 3))" :amount="amount"></ImageRow>
         <div class="info mx-3 mb-3 p-3 pb-5">
             <h1>{{post.title}}</h1>
-            <small>{{new Date(post.timestamp).toLocaleDateString()}}<span v-if="post.author"> - {{post.author.username}}</span></small>
+            <small><span v-if="!post.hide_date">{{new Date(post.timestamp).toLocaleDateString()}}</span><span v-if="!post.hide_date && !post.hide_author && post.author">   |   </span><span v-if="post.author && !post.hide_author">{{post.author.username}}</span></small>
             <div>
                 <span v-bind:key="tag" v-for="tag of post.tags" class="badge badge-primary mr-1">{{tag}}</span>
                 <span v-if="user && user.admin" class="badge badge-info mr-1">{{getPublicityString(post.publicity)}}</span>

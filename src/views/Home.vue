@@ -35,6 +35,9 @@ export default {
                 this.posts = await axios.get(env.backend_url + '/posts?token=' + localStorage.getItem('token'))
                     .then(({data}) => {
                         for(const post of data){
+                            for(const image of post.images){
+                                image.thumbnail = image.thumbnail_url;
+                            }
                             this.allImages.push(...post.images);
                         }
                         return data;

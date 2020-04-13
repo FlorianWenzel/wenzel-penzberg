@@ -114,8 +114,10 @@
                 this.index = this.i;
                 if(this.i !== -1){
                     document.querySelector('body').style.overflowY = 'hidden';
+                    document.querySelector('html').style.overflowY = 'hidden';
                 }else{
                     document.querySelector('body').style.overflowY = 'scroll';
+                    document.querySelector('html').style.overflowY = 'scroll';
                 }
             }
         },
@@ -123,6 +125,9 @@
 </script>
 
 <style scoped>
+    * {
+        overflow: hidden;
+    }
     body {
         overflow-y: hidden;
         position: fixed;
@@ -204,7 +209,5 @@
     .progress > .progress-bar{
         transition: none!important;
     }
-    .img-wrapper{
-        border: none!important;
-    }
 </style>
+

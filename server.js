@@ -144,41 +144,28 @@ app.post("/upload", multerConfig.saveToUploads, async (req, res) => {
       console.log(`error: ${error.message}`);
       return;
     }
-    await exec(
-      "convert uploads/" +
-        file.filename +
-        " -resize 512@ uploads/thumbnail/" +
-        file.filename,
-      async error => {
-        if (error) {
-          console.log(`error: ${error.message}`);
-          return;
-        }
-
-        const img_token = jwt.sign(file.filename, token);
-        await db.images.insertOne({
-          parent: token,
-          token: img_token,
-          ...file,
-          thumbnail_url: "/thumbnail/" + file.filename,
-          dropbox: false
-        });
-        res.send({
-          valid: true,
-          thumbnail_url: env.backend_url + "/image/thumbnail/" + file.filename,
-          src:
-            env.backend_url + "/image/" + file.filename + "?token=" + img_token,
-          filename: file.filename
-        });
-      }
-    );
+    const thumbnailname = await generateThumbnail(`uploads/${file.filename}`, file.filename);
+    const img_token = jwt.sign(file.filename, token);
+    await db.images.insertOne({
+      parent: token,
+      token: img_token,
+      ...file,
+      thumbnail_url: "/thumbnail/" + file.filename,
+      dropbox: false
+    });
+    res.send({
+      valid: true,
+      thumbnail_url: `${env.backend_url}/image/thumbnail/${thumbnailname}`,
+      src: `${env.backend_url}/image/${file.filename}?token=${img_token}`,
+      filename: file.filename
+    });
   });
 });
 app.get("/image/thumbnail/:filename", async (req, res) => {
   const { filename } = req.params;
   const image = await db.images.findOne({ filename });
   if (!image) {
-    res.send(404);
+    res.sendStatus(404);
     return;
   }
   res.sendFile(__dirname + "/uploads/thumbnail/" + filename);
@@ -206,27 +193,20 @@ app.post("/importFromDropbox", async (req, res) => {
   const imageBuffer = await axios
     .get(url, { responseType: "arraybuffer" })
     .then(response => Buffer.from(response.data, "binary"));
-  const thumbnailname = uuid() + ".jpg";
   fs.writeFileSync(__dirname + "/temp/" + filename, imageBuffer);
-  await new Promise((resolve, reject) => {
-    exec(
-      "convert " +
-        __dirname +
-        "/temp/" +
-        filename +
-        " -resize 512@ " +
-        __dirname +
-        "/uploads/thumbnail/" +
-        thumbnailname,
-      async error => {
-        if (error) {
-          console.log(`error: ${error.message}`);
-          reject();
+  const orientation = await new Promise((resolve) => {
+    new ExifImage(
+        { image: __dirname + "/temp/" + filename },
+        async (error, meta) => {
+          if (error) {
+            resolve(1);
+          } else {
+            resolve(meta.image.Orientation || 1);
+          }
         }
-        resolve();
-      }
     );
-  });
+  })
+  const thumbnailname = await generateThumbnail(`${__dirname}/temp/${filename}`);
   const meta = await new Promise(resolve => {
     new ExifImage(
       { image: __dirname + "/temp/" + filename },
@@ -244,6 +224,7 @@ app.post("/importFromDropbox", async (req, res) => {
     dropbox: true,
     filename: thumbnailname,
     src: url,
+    orientation,
     thumbnail_url: env.backend_url + "/image/thumbnail/" + thumbnailname,
     meta
   };
@@ -251,6 +232,21 @@ app.post("/importFromDropbox", async (req, res) => {
   fs.unlinkSync(__dirname + "/temp/" + filename);
   res.send(image);
 });
+
+async function generateThumbnail(path, name){
+  if(!name)
+    name = `${uuid()}.jpg`;
+  return new Promise((resolve, reject) => {
+    exec(`convert ${path} -resize 512@ ${__dirname}/uploads/thumbnail/${name}`,
+        async error => {
+          if (error) {
+            reject(error);
+          }
+          resolve(name);
+        }
+    );
+  });
+}
 
 app.get("/posts", async (req, res) => {
   const { token } = req.query;

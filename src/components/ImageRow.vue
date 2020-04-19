@@ -100,7 +100,9 @@
             }
         },
         created() {
-            this.iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const isSafari = !!navigator.userAgent.match(/Version\/[\d\.]+.*Safari/);
+            const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            this.iOS = iOS && isSafari;
             if(window.innerWidth > 500){
                 this.mobile = false;
             }

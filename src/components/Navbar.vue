@@ -32,7 +32,9 @@
     nav {
         position: absolute;
         top: 0;
+        left: 0;
         z-index: 100;
         width: 100vw;
+        max-width: 100vw;
     }
 </style>

@@ -1,6 +1,16 @@
 <template>
     <div class="pb-5">
-        <ImageRow class="postImageRow" @imageLoad="imageRowMounted" :key="amount" @mounted="imageRowMounted" @click="imageClick" v-for="amount in Math.ceil(post.images.length / 3.0)" :images="post.images.slice((amount - 1) * 3, ((amount) * 3))" :amount="amount"></ImageRow>
+        <ImageRow
+                class="postImageRow"
+                @imageLoad="imageRowMounted"
+                :key="amount" @mounted="imageRowMounted"
+                @click="imageClick"
+                v-for="amount in Math.ceil(post.images.length / 3.0)"
+                :images="post.images.slice((amount - 1) * 3, ((amount) * 3))"
+                :amount="amount"
+                :width="width"
+                :height="height"
+        />
         <div class="info mx-3 mb-3 p-3 pb-5">
             <h1>{{post.title}}</h1>
             <small><span v-if="!post.hide_date">{{new Date(post.timestamp).toLocaleDateString()}}</span><span v-if="!post.hide_date && !post.hide_author && post.author">   |   </span><span v-if="post.author && !post.hide_author">{{post.author.username}}</span></small>
@@ -23,7 +33,20 @@
         name: "Post",
         components: {ImageRow},
         props: ["post", "user"],
+        data(){
+            return {
+                width: 1000,
+                height: 1000,
+            }
+        },
         methods: {
+            handleResize() {
+                if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
+                this.resizeTimeout = setTimeout(() => {
+                    this.width = this.$el.getBoundingClientRect().width;
+                    this.height = this.$el.getBoundingClientRect().height;
+                }, 300);
+            },
             imageClick(image){
                 this.$emit('imageClick', image, this.post)
             },
@@ -48,6 +71,9 @@
             imageRowMounted(args){
                 this.$emit('rendered', args);
             }
+        },
+        mounted(){
+            window.addEventListener("resize", this.handleResize);
         }
     }
 </script>

@@ -1,5 +1,5 @@
 <template>
-    <div  :class="'w-100 imagerow ' + (!mobile ? 'd-flex align-content-center' : '')">
+    <div :key="width" :class="'w-100 imagerow ' + (!mobile ? 'd-flex align-content-center' : '')">
         <div
                 :key="image.filename"
                 :data-sub-html="image.text"
@@ -31,7 +31,7 @@
 <script>
     export default {
         name: "ImageRow",
-        props: ["images", "amount"],
+        props: ["images", "amount", "width"],
         data: function(){
             return {
                 sizes: [],
@@ -71,7 +71,10 @@
                     in_percent = 1;
                     height = window.innerWidth / parseInt(this.images[index]._width) * parseInt(this.images[index]._height);
                 }
-                const width = in_percent * window.innerWidth;
+                let width = in_percent * window.innerWidth;
+                if(!this.iOS && this.images[index].orientation && [6, 8, 5, 7].includes(this.images[index].orientation)){
+                  // [height, width] = [width, height]
+                }
                 return {height: height + 'px', width: width + 'px'};
             },
             click(image){
@@ -85,7 +88,7 @@
             }
         },
         watch: {
-            images: function(){
+            images() {
                 this.sizes = [];
                 for(const index in this.images){
                     const image = this.images[index];
@@ -97,15 +100,21 @@
                     else
                         this.imageSizes.push(size);
                 }
+            },
+            width() {
+                if(window.innerWidth > 500){
+                    this.mobile = false;
+                }else{
+                    this.mobile = true;
+                }
             }
         },
         created() {
             const isSafari = !!navigator.userAgent.match(/Version\/[\d.]+.*Safari/);
             const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             this.iOS = iOS && isSafari;
-            if(window.innerWidth > 500){
-                this.mobile = false;
-            }
+            if(this.iOS)
+                console.log('detected iOS/Safari - not rotating images')
             for(const index in this.images){
                 const image = this.images[index];
                 const size = this.getWidth(index);
@@ -114,6 +123,9 @@
                     this.imageSizes.push({width: size.height, height: size.width});
                 else
                     this.imageSizes.push(size);
+            }
+            if(window.innerWidth > 500){
+                this.mobile = false;
             }
         }
     }

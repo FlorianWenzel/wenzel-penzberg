@@ -1,7 +1,9 @@
+require('dotenv').config()
+const { DROPBOX_TOKEN, DEFAULT_PW, BACKEND_URL, DB_URL, IMAGE_PROXY} = process.env;
+
 const app = require("express")();
 const http = require("http").createServer(app);
-const url = "mongodb://localhost:27017";
-const MongoClient = require("mongodb").MongoClient(url, {
+const MongoClient = require("mongodb").MongoClient(DB_URL, {
   useUnifiedTopology: true
 });
 const bcrypt = require("bcryptjs");
@@ -11,18 +13,19 @@ const multerConfig = require("./multer.js");
 const jwt = require("jsonwebtoken");
 const { exec } = require("child_process");
 const fs = require("fs");
-const env = require("./src/assets/env");
 const ExifImage = require("exif").ExifImage;
 const axios = require("axios");
 const path = require("path");
 const uuid = require("uuid/v4");
 const ObjectId = require("mongodb").ObjectId;
-
+const dropboxV2 = require('dropbox-v2-api');
+const dropbox = dropboxV2.authenticate({token: DROPBOX_TOKEN});
+const Jimp = require('jimp');
 app.use(bodyParser.json());
 let db;
 
 app.use(cors());
-// Use connect method to connect to the server
+
 MongoClient.connect(async (err, client) => {
   console.log("Connected successfully to server");
   const _db = client.db("wenzel_penzberg");
@@ -36,7 +39,7 @@ MongoClient.connect(async (err, client) => {
   if (allUsers.length === 0) {
     const account = {
       username: "admin",
-      password: env.default_admin_pwd,
+      password: DEFAULT_PW,
       admin: true,
       permissions: {
         post: true
@@ -129,56 +132,45 @@ app.post("/getAllUsers", async (req, res) => {
 });
 
 app.post("/upload", multerConfig.saveToUploads, async (req, res) => {
-  if (!req.file) {
-    res.status(500);
-  }
   const { token } = req.body;
   const { file } = req;
   const user = await db.users.findOne({ token });
-  if (!user || !file.mimetype.includes("image")) {
-    //TODO
+  if (!file || !user || !file.mimetype.includes("image")){
+    res.status(500);
     return;
   }
-  await exec("mogrify -auto-orient uploads/" + file.filename, async error => {
-    if (error) {
-      console.log(`error: ${error.message}`);
-      return;
-    }
-    const thumbnailname = await generateThumbnail(`uploads/${file.filename}`, file.filename);
-    const img_token = jwt.sign(file.filename, token);
-    await db.images.insertOne({
-      parent: token,
-      token: img_token,
-      ...file,
-      thumbnail_url: "/thumbnail/" + file.filename,
-      dropbox: false
-    });
-    res.send({
-      valid: true,
-      thumbnail_url: `${env.backend_url}/image/thumbnail/${thumbnailname}`,
-      src: `${env.backend_url}/image/${file.filename}?token=${img_token}`,
-      filename: file.filename
-    });
+  const { filename } = file;
+  const path =`/tmp/${filename}`
+  const src = await uploadToDropbox(path, filename);
+  const meta = await getMeta(path);
+  const thumbnail_url = await generateThumbnail(path, filename);
+  const image = { ...meta, parent: token, thumbnail_url, src, filename, valid: true};
+  await db.images.insertOne({
+    ...image
   });
+  res.send(image);
 });
-app.get("/image/thumbnail/:filename", async (req, res) => {
-  const { filename } = req.params;
-  const image = await db.images.findOne({ filename });
-  if (!image) {
-    res.sendStatus(404);
-    return;
+app.get("/image/:encoded_filename", async (req, res) => {
+  const { encoded_filename } = req.params;
+  const filename = decodeURIComponent(encoded_filename);
+  const url = `https://www.dropbox.com/${filename}?raw=1`;
+  if(!IMAGE_PROXY){
+    res.redirect(url);
+  }else{
+    axios({
+      method: 'get',
+      url,
+      responseType: 'arraybuffer'
+    })
+        .then(function (response) {
+          var headers = {'Content-Type': 'image/jpeg'};
+          res.writeHead(200, headers);
+          res.end(response.data, 'binary');
+        })
+        .catch(function (error) {
+          res.send("error:" + error);
+        });
   }
-  res.sendFile(__dirname + "/uploads/thumbnail/" + filename);
-});
-app.get("/image/:filename", async (req, res) => {
-  const { token } = req.query;
-  const { filename } = req.params;
-  const image = await db.images.findOne({ filename });
-  if (!image || image.token !== token) {
-    res.send(404);
-    return;
-  }
-  res.sendFile(__dirname + "/" + image.path);
 });
 app.post("/importFromDropbox", async (req, res) => {
   const { url, token } = req.body;
@@ -188,61 +180,93 @@ app.post("/importFromDropbox", async (req, res) => {
     return;
   }
 
-  const extention = path.extname(url).replace("?raw=1", "");
-  const filename = path.basename(url);
+  const extention = url.replace('?raw=1','').split('.').pop();
+  const filename = `${uuid()}.${extention}`;
+  const path = `/tmp/${filename}`;
+
   const imageBuffer = await axios
     .get(url, { responseType: "arraybuffer" })
     .then(response => Buffer.from(response.data, "binary"));
-  fs.writeFileSync(__dirname + "/temp/" + filename, imageBuffer);
-  const orientation = await new Promise((resolve) => {
-    new ExifImage(
-        { image: __dirname + "/temp/" + filename },
-        async (error, meta) => {
-          if (error) {
-            resolve(1);
-          } else {
-            resolve(meta.image.Orientation || 1);
-          }
-        }
-    );
-  })
-  const thumbnailname = await generateThumbnail(`${__dirname}/temp/${filename}`);
-  const meta = await new Promise(resolve => {
-    new ExifImage(
-      { image: __dirname + "/temp/" + filename },
-      async (error, meta) => {
-        if (error) {
-          resolve({ meta: null });
-        } else {
-          resolve(meta);
-        }
-      }
-    );
-  });
+  fs.writeFileSync(path, imageBuffer);
+
+  const src = await uploadToDropbox(path, filename);
+  const thumbnail_url = await generateThumbnail(`/tmp/${filename}`);
+  const meta = await getMeta(path);
+
   const image = {
-    parent: token,
-    dropbox: true,
-    filename: thumbnailname,
-    src: url,
-    orientation,
-    thumbnail_url: env.backend_url + "/image/thumbnail/" + thumbnailname,
-    meta
+    ...meta, parent: token, filename, src, thumbnail_url
   };
   await db.images.insertOne(image);
-  fs.unlinkSync(__dirname + "/temp/" + filename);
   res.send(image);
 });
 
-async function generateThumbnail(path, name){
-  if(!name)
-    name = `${uuid()}.jpg`;
+function generateThumbnail(path, filename){
+  if(!filename)
+    filename = `${uuid()}.jpg`;
+  const thumbnailPath = `/tmp/thumbnail/${filename}`;
   return new Promise((resolve, reject) => {
-    exec(`convert ${path} -resize 512@ ${__dirname}/uploads/thumbnail/${name}`,
-        async error => {
-          if (error) {
-            reject(error);
+    Jimp.read(path, (err, image) => {
+      if (err) throw err;
+      image
+        .resize(20, Jimp.AUTO)
+        .write(thumbnailPath, async () => {
+          const url = await uploadToDropbox(thumbnailPath, `thumbnail/${filename}`);
+          resolve(url);
+        })
+    });
+  });
+}
+
+function uploadToDropbox(path, name){
+  const dropboxPath = `/wnzl/${name}`;
+  return new Promise((resolve, reject) => {
+    dropbox({
+      resource: 'files/upload',
+      parameters: {
+        path: dropboxPath
+      },
+      readStream: fs.createReadStream(path)
+    }, (err) => {
+      if(err) {
+        console.log('err:', err);
+        reject();
+      } else {
+        dropbox({
+          resource: 'sharing/create_shared_link_with_settings',
+          parameters: {
+            path: dropboxPath,
+            settings: {
+              "requested_visibility": "public",
+              "audience": "public",
+              "access": "viewer"
+            }
           }
-          resolve(name);
+        }, (err, result) => {
+          if(err) {
+            console.log('err:', err);
+            reject();
+          }
+          const proxy_url = `${BACKEND_URL}/image/${encodeURIComponent(result.url.replace('https://www.dropbox.com/', '').replace('?dl=0', ''))}`;
+          resolve(proxy_url);
+        });
+      }
+    });
+  })
+}
+
+function getMeta(path){
+  return new Promise(resolve => {
+    new ExifImage(
+        { image: path },
+        async (error, meta) => {
+          if (error) {
+            resolve(null);
+          } else {
+            const width = meta.exif ? meta.exif.ExifImageWidth : undefined;
+            const height = meta.exif ? meta.exif.ExifImageHeight : undefined;
+            const orientation = meta.image ? meta.image.Orientation : 1;
+            resolve({meta, width, height, orientation});
+          }
         }
     );
   });
@@ -303,17 +327,7 @@ app.get("/posts", async (req, res) => {
 });
 app.post("/post", async (req, res) => {
   const {
-    title,
-    images,
-    tags,
-    text,
-    publicity,
-    timestamp,
-    parent,
-    album,
-    id,
-    hide_date,
-    hide_author
+    title, images, tags, text, publicity, timestamp, parent, album, id, hide_date, hide_author
   } = req.body;
   const user = await db.users.findOne({ token: parent });
   if (!user || user.permissions.post !== true) {
@@ -326,31 +340,13 @@ app.post("/post", async (req, res) => {
       { _id },
       {
         $set: {
-          title,
-          images,
-          tags,
-          text,
-          publicity,
-          timestamp,
-          parent,
-          album,
-          hide_date,
-          hide_author
+          title, images, tags, text, publicity, timestamp, parent, album, id, hide_date, hide_author
         }
       }
     );
   } else {
     await db.posts.insertOne({
-      title,
-      images,
-      tags,
-      text,
-      publicity,
-      timestamp,
-      parent,
-      album,
-      hide_date,
-      hide_author
+      title, images, tags, text, publicity, timestamp, parent, album, id, hide_date, hide_author
     });
   }
   res.send({ valid: true });

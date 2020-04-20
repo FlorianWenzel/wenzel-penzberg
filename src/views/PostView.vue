@@ -39,14 +39,9 @@
               class="custom-file-input"
               id="inputGroupFile04"
             />
-            <label class="custom-file-label" for="inputGroupFile04">{{
-              selectedFile.name
-            }}</label>
-          </div>
-          <div class="input-group-append">
-            <button class="btn btn-outline-info" type="button" @click="upload">
-              Hochladen!
-            </button>
+            <label class="custom-file-label" for="inputGroupFile04">
+              {{ selectedFile.name }}
+            </label>
           </div>
         </div>
       </div>
@@ -270,6 +265,7 @@ export default {
     selectFile(event) {
       if (event.target.files.length === 1)
         this.selectedFile = event.target.files[0];
+      this.upload();
     },
     async addFromDropbox(files) {
       for (const file of files) {

@@ -1,6 +1,7 @@
 .DS_Store
 env.js
 .idea
+.env
 
 uploads
 node_modules

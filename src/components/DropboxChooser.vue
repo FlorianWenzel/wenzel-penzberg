@@ -1,12 +1,13 @@
 import Swal from "sweetalert2";
 <template>
-    <button @click="open" type="button" class="btn btn-info w-100"><i class="fab fa-dropbox"></i> aus der Kiste</button>
+    <button @click="open" type="button" :disabled="disabled" class="btn btn-info w-100"><i class="fab fa-dropbox"></i> aus der Kiste</button>
 </template>
 
 <script>
 
     export default {
         name: "DropboxChooser",
+        props: ['disabled'],
         data: function(){
             return{
                 Dropbox: null,

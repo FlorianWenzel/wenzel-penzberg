@@ -3,7 +3,7 @@
         <div v-if="playing" class="progress bg-transparent">
             <div class="progress-bar h-25 bg-info" role="progressbar" :aria-valuenow="progressValue" :aria-valuemin="0"  :style="'width: ' + progressValue + 'vw;'" aria-valuemax="100"></div>
         </div>
-        <ImageRow @click="play" v-touch:swipe="swipe" class="row" :images="[images[index]]" amount="1"></ImageRow>
+        <img @click="play" v-touch:swipe="swipe" :src="images[index].src" alt="">
         <div v-if="images.length !== 1 && !(isTouch() && mobile)" @click="previous" class="prev"><i class="fas fa-angle-left fa-2x text-light"></i></div>
         <div v-if="false" class="play" @click="play">
             <i v-if="!playing" class="fas fa-play text-light"></i>
@@ -19,12 +19,10 @@
 </template>
 
 <script>
-    import ImageRow from "./ImageRow";
     let zoom;
 
     export default {
         name: "Zoom",
-        components: { ImageRow },
         data(){
             return {
                 index: null,
@@ -127,6 +125,10 @@
 <style scoped>
     * {
         overflow: hidden;
+    }
+    img {
+        max-height: 100vh;
+        max-width: 100vw;
     }
     body {
         overflow-y: hidden;

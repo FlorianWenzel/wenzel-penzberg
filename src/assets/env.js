@@ -1,3 +1,3 @@
 module.exports = {
-    backend_url: "https://wenzel-penzberg.now.sh", // NO "/" at tha end plox
+    backend_url: "http://127.0.0.1:3000",
 };

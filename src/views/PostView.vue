@@ -6,6 +6,7 @@
         @close="imageToEdit = null"
         :key="amount"
         class="postImageRow"
+        border-style="solid thin white"
         v-for="amount in Math.ceil(images.length / 3.0)"
         :images="images.slice((amount - 1) * 3, amount * 3)"
         :amount="amount"
@@ -18,15 +19,20 @@
       @remove="remove"
       :mobile="mobile"
     />
-    <div v-if="uploading" class="progress mb-2">
-      <div
-        class="progress-bar progress-bar-striped progress-bar-animated"
-        role="progressbar"
-        :aria-valuenow="percent_done"
-        aria-valuemin="0"
-        aria-valuemax="100"
-        :style="'width: ' + percent_done + '%'"
-      ></div>
+    <div v-if="importing" class="mb-2">
+      <span class="w-100">{{completed_promises}}/{{importPromises.length}}</span>
+      <div class="progress mb-2">
+        <div
+            class="progress-bar progress-bar-striped progress-bar-animated"
+            role="progressbar"
+            :aria-valuenow="percent_done"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            :style="'width: ' + percent_done + '%'"
+        >
+        </div>
+      </div>
+      <span class="w-100">Bilder werden hochgeladen <i class="fas fa-spinner fa-spin"></i></span>
     </div>
     <div class="form-row">
       <div class="col-12 mb-3">
@@ -38,6 +44,8 @@
               accept="image/x-png,image/gif,image/jpeg"
               class="custom-file-input"
               id="inputGroupFile04"
+              :disabled="importing"
+              multiple="multiple"
             />
             <label class="custom-file-label" for="inputGroupFile04">
               {{ selectedFile.name }}
@@ -48,7 +56,7 @@
     </div>
     <div class="form-row my-3">
       <div class="col-6">
-        <DropboxChooser @addFromDropbox="addFromDropbox"></DropboxChooser>
+        <DropboxChooser :disabled="importing" @addFromDropbox="addFromDropbox"></DropboxChooser>
       </div>
       <div class="col-6">
         <OnedriveChooser></OnedriveChooser>
@@ -212,13 +220,15 @@ export default {
       timestamp: Date.now(),
       readableTimestamp: null,
       selectedFile: { name: "Bild auswählen" },
-      uploading: false,
       percent_done: 0,
       album: "",
       hide_author: false,
       hide_date: false,
       notPushing: true,
-      imageToEdit: null
+      imageToEdit: null,
+      importPromises: [],
+      importing: false,
+      completed_promises: 0,
     };
   },
   props: ["user", "mobile", "postToEdit"],
@@ -262,124 +272,97 @@ export default {
     async imageClick(image) {
       this.$modal.show("EditImageModal", { image });
     },
-    selectFile(event) {
-      if (event.target.files.length === 1)
-        this.selectedFile = event.target.files[0];
-      this.upload();
+    async selectFile(event) {
+      this.importing = true;
+      this.importPromises = new Array(event.target.files.length);
+      for(const index in event.target.files){
+        this.importPromises[index] = await new Promise((resolve) => {
+          this.selectedFile = event.target.files[index];
+          this.upload()
+          .then(() => {
+            this.completed_promises++;
+            this.refreshUploadBar();
+            resolve();
+          });
+        })
+      }
     },
     async addFromDropbox(files) {
-      for (const file of files) {
-        const src = file.link.replace("?dl=0", "?raw=1");
+      //TODO only allow when non are qued
+      this.importing = true;
+      this.importPromises = new Array(files.length);
+      for (const index in files) {
+        const promise = await new Promise((resolve) => {
+          const src = files[index].link.replace("?dl=0", "?raw=1");
 
-        let { data: newImage } = await axios.post(
-          env.backend_url + "/importFromDropbox",
-          { url: src, token: localStorage.getItem("token") }
-        );
-        if (
-          !newImage.meta ||
-          !newImage.meta.exif ||
-          !newImage.meta.exif.ExifImageWidth ||
-          !newImage.meta.exif.ExifImageHeight
-        ) {
-          newImage = { ...newImage, ...(await this.getMeta(src)) };
-        } else {
-          newImage.width = newImage.meta.exif.ExifImageWidth;
-          newImage.height = newImage.meta.exif.ExifImageHeight;
-        }
-        this.notPushing = false;
-        this.images.push(newImage);
-        this.notPushing = true;
+          axios.post(
+              `${env.backend_url}/importFromDropbox`,
+              { url: src, token: localStorage.getItem("token") }
+          ).then((response)=> {
+            const {data: newImage} = response;
+            this.notPushing = false;
+            this.images.push(newImage);
+            this.notPushing = true;
+            resolve();
+            this.completed_promises++;
+            this.refreshUploadBar();
+          })
+        })
+        this.importPromises[index] = promise;
+      }
+    },
+    refreshUploadBar(){
+      this.percent_done = (this.completed_promises / this.importPromises.length) * 100;
+      if(this.completed_promises === this.importPromises.length){
+        this.importing = false;
+        this.completed_promises = 0;
       }
     },
     upload() {
-      if (!this.selectedFile.size) {
-        return;
-      }
-      this.uploading = true;
-      let formData = new FormData();
-      formData.append("file", this.selectedFile);
-      formData.append("token", localStorage.getItem("token"));
-      axios
-        .post(env.backend_url + "/upload", formData, {
-          onUploadProgress: data => {
-            this.percent_done = (data.loaded / data.total) * 100;
-          }
-        })
-        .then(async ({ data }) => {
-          const { valid, src, filename, thumbnail_url } = data;
-          if (!valid) {
-            //TODO
-            return;
-          }
-          const image = {
-            src,
-            filename,
-            thumbnail_url,
-            ...(await this.getMeta(src))
-          };
-          this.notPushing = false;
-          this.images.push(image);
-          this.notPushing = true;
-          this.selectedFile = { name: "Bild auswählen" };
-          this.uploading = false;
-          this.percent_done = 0;
-        });
+      return new Promise((resolve) => {
+        if (!this.selectedFile.size) {
+          return;
+        }
+        let formData = new FormData();
+        formData.append("file", this.selectedFile);
+        formData.append("token", localStorage.getItem("token"));
+        axios
+            .post(env.backend_url + "/upload", formData)
+            .then(async ({ data: image }) => {
+              this.notPushing = false;
+              this.images.push(image);
+              this.notPushing = true;
+              resolve();
+            });
+      })
     },
-    post(event) {
+    post: function (event) {
       event.preventDefault();
 
-      if (this.uploading) {
+      if (this.importing) {
         swalWithBootstrapButtons.fire(
-          "Geduld!",
-          "Bitte warte bis der Upload abgeschlossen ist",
-          "error"
+            "Geduld!",
+            "Bitte warte bis der Upload abgeschlossen ist",
+            "error"
         );
         return;
       }
-      const {
-        title,
-        images,
-        tags,
-        text,
-        publicity,
-        album,
-        id,
-        timestamp,
-        hide_date,
-        hide_author
+      const {title, images, tags, text, publicity, album, id, timestamp, hide_date, hide_author
       } = this;
       const post = {
-        title,
-        images,
-        tags,
-        text,
-        publicity,
-        album,
-        id,
-        timestamp,
-        hide_date,
-        hide_author,
-        parent: localStorage.getItem("token")
+        title, images, tags, text, publicity, album, id, timestamp, hide_date, hide_author, parent: localStorage.getItem("token")
       };
-      axios.post(env.backend_url + "/post", post).then(({ data }) => {
-        const { valid } = data;
+      axios.post(env.backend_url + "/post", post).then(({data}) => {
+        const {valid} = data;
         if (!valid) console.log("not valid...");
         else {
           swalWithBootstrapButtons.fire(
-            "Erstellt!",
-            "Beitrag wurde erstellt",
-            "success"
+              "Erstellt!",
+              "Beitrag wurde erstellt",
+              "success"
           );
           this.$router.push("/");
         }
-      });
-    },
-    getMeta(url) {
-      return new Promise((resolve, reject) => {
-        let img = new Image();
-        img.onload = () => resolve({ height: img.height, width: img.width });
-        img.onerror = reject;
-        img.src = url;
       });
     },
     dateToInputFormat(date) {

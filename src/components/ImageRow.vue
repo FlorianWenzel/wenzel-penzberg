@@ -1,183 +1,165 @@
 <template>
-    <div :key="width" :class="'w-100 imagerow ' + (!mobile ? 'd-flex align-content-center' : '')">
+    <div class="vue-gallery-row">
         <div
-                :key="image.filename"
+                v-for="(image, index) in images"
+                :key="index"
                 :data-sub-html="image.text"
                 :data-src="image.src"
-                v-for="(image, index) in images"
-                :class="`img-wrapper align-self-center position-relative text-align-center overflow-hidden rotate-${!iOS ? image.orientation : 1}`"
-                :style="{...sizes[index]}"
+                class="vue-gallery-image-wrapper"
+                :style="
+        size[index] +
+        ' position: relative; border: solid thick white;' +
+        (smoothResize ? 'transition: width .3s, height .3s;' : '')
+      "
         >
             <img
+                    v-if="!loaded[index]"
                     :src="image.thumbnail_url"
-                    :id="image.filename"
                     @click="click(image)"
-                    class="thumbnail"
                     :alt="image.text ? image.text : ' '"
-                    :style="!iOS ? {...imageSizes[index]}: {...sizes[index]}"
+                    class="vue-gallery-image"
             />
             <img
                     :src="image.src"
                     @load="loadImage(image)"
                     @click="click(image)"
-                    :style="!iOS ? {...imageSizes[index], backgroundImage: image.thumbnail_url}: {...sizes[index], backgroundImage: image.thumbnail_url}"
+                    :style="getBackground(image)"
                     :alt="image.text ? image.text : ' '"
+                    class="vue-gallery-image"
             />
+            <div
+                    v-if="image.text"
+                    @click="click(image)"
+                    class="vue-gallery-text"
+                    :style="hideText[index] ? 'bottom: -100%;' : ''"
+            >
+                {{ image.text }}
+            </div>
         </div>
     </div>
 </template>
 
-<!--suppress JSSuspiciousNameCombination -->
 <script>
     export default {
         name: "ImageRow",
-        props: ["images", "amount", "width"],
-        data: function(){
+        props: [
+            "images",
+            "amount",
+            "width",
+            "borderStyle",
+            "smoothResize",
+            "toggleTextOnClick",
+        ],
+        data: function () {
             return {
-                sizes: [],
-                imageSizes: [],
-                widestImage: null,
-                mobile: true,
-                iOS: true
-            }
+                size: [],
+                loaded: [],
+                hideText: [],
+            };
         },
         methods: {
-            getWidth(index){
+            updateSizes() {
+                this.size = [];
                 const ratio = [];
-                const imageWithHighestRatio = { ratio:0 };
-                for(const image of this.images){
-                    image._width = image.width;
-                    image._height = image.height;
-                    if(image.orientation && [6, 8, 5, 7].includes(image.orientation)){
-                        image._width = image.height;
-                        image._height = image.width;
-                    }
-                    const r = (parseInt(image._width)) / (parseInt(image._height));
+                const imageWithHighestRatio = { ratio: 0 };
+                for (const image of this.images) {
+                    const r = parseInt(image.width) / parseInt(image.height);
                     ratio.push(r);
-                    if(r > imageWithHighestRatio.ratio){
+                    if (r > imageWithHighestRatio.ratio) {
                         imageWithHighestRatio.ratio = r;
                         imageWithHighestRatio.image = image;
                     }
                 }
-                const full_width = ratio.reduce((accumulator, currentValue) => accumulator + currentValue);
-                let in_percent = (ratio[index] / full_width);
-                const screenWidthOfHighestRatio = ((parseInt(imageWithHighestRatio.image._width)) / (parseInt(imageWithHighestRatio.image._height)) / full_width) * window.innerWidth;
-
-                const shrinkingFactor = screenWidthOfHighestRatio / imageWithHighestRatio.image._width;
-                let height = imageWithHighestRatio.image._height * shrinkingFactor;
-
-
-                if(window.innerWidth < 500){
-                    in_percent = 1;
-                    height = window.innerWidth / parseInt(this.images[index]._width) * parseInt(this.images[index]._height);
+                const full_width = ratio.reduce(
+                        (accumulator, currentValue) => accumulator + currentValue
+                );
+                for (const index in this.images) {
+                    let in_percent = (ratio[index] / full_width) * 100;
+                    const screenWidthOfHighestRatio =
+                            (parseInt(imageWithHighestRatio.image.width) /
+                                    parseInt(imageWithHighestRatio.image.height) /
+                                    full_width) *
+                            this.width;
+                    const shrinkingFactor =
+                            screenWidthOfHighestRatio / imageWithHighestRatio.image.width;
+                    let height = imageWithHighestRatio.image.height * shrinkingFactor;
+                    this.size.push("height: " + height + "px; width: " + in_percent + "%;");
                 }
-                let width = in_percent * window.innerWidth;
-                if(!this.iOS && this.images[index].orientation && [6, 8, 5, 7].includes(this.images[index].orientation)){
-                  // [height, width] = [width, height]
+            },
+            click(image) {
+                this.$emit("click", image);
+                if (this.toggleTextOnClick && image.text) {
+                    this.toggleText(image);
                 }
-                return {height: height + 'px', width: width + 'px'};
             },
-            click(image){
-                this.$emit('click', image);
+            toggleText(image) {
+                const index = this.images.indexOf(image);
+                this.$set(this.hideText, index, !this.hideText[index]);
             },
-            loadImage(image){
-                if(document.getElementById(image.filename))
-                    document.getElementById(image.filename).remove();
-                event.target.classList.add('loaded');
-                this.$emit('imageLoad', event);
-            }
+            loadImage(image) {
+                const index = this.images.indexOf(image);
+                this.$set(this.loaded, index, true);
+                event.target.classList.add("loaded");
+                this.$emit("imageLoad", event);
+            },
+            getBackground(image) {
+                return `background-image: url('${image.thumbnail_url}');`;
+            },
         },
         watch: {
             images() {
-                this.sizes = [];
-                for(const index in this.images){
-                    const image = this.images[index];
-                    const size = this.getWidth(index);
-                    this.sizes.push(size);
-                    if(image.orientation && [6, 8, 5, 7].includes(image.orientation))
-                        this.imageSizes.push({width: size.height, height: size.width, marginBottom: -size.width, marginLeft: -size.height});
-
-                    else
-                        this.imageSizes.push(size);
-                }
+                this.updateSizes();
             },
             width() {
-                if(window.innerWidth > 500){
-                    this.mobile = false;
-                }else{
-                    this.mobile = true;
-                }
-            }
+                this.updateSizes();
+            },
         },
-        created() {
-            const isSafari = !!navigator.userAgent.match(/Version\/[\d.]+.*Safari/);
-            const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            this.iOS = iOS && isSafari;
-            if(this.iOS)
-                console.log('detected iOS/Safari - not rotating images')
-            for(const index in this.images){
-                const image = this.images[index];
-                const size = this.getWidth(index);
-                this.sizes.push(size);
-                if(image.orientation && [6, 8, 5, 7].includes(image.orientation))
-                    this.imageSizes.push({width: size.height, height: size.width});
-                else
-                    this.imageSizes.push(size);
-            }
-            if(window.innerWidth > 500){
-                this.mobile = false;
-            }
-        }
-    }
+        mounted() {
+            this.updateSizes();
+        },
+    };
 </script>
 
 <style scoped>
-    .rotate-6 img{
-        /*noinspection CssInvalidPropertyValue*/
-        image-orientation: none;
-        transform: translate(-50%, -50%) rotate(90deg);
-        top: 50%;
-        left: 50%;
-        position: absolute;
-        text-align: center;
-        max-width: 100vw!important;
-        max-height: 100vh!important;
-    }
-    .rotate-3 img{
-        transform: translate(-50%, -50%) rotate(270deg);
-        white-space: nowrap;
-        top: 50%;
-        left: 50%;
-        position: absolute;
-        text-align: center;
-    }
-    .postImageRow>.img-wrapper {
-        border: solid .5rem white;
-    }
-    img:hover{
+    img:hover {
         cursor: pointer;
     }
     img {
         background-size: cover;
         background-position: center;
-        filter: blur(10px);
-        opacity: 0;
-        max-width: 100%;
-        max-height: 100%;
-    }
-    .thumbnail {
-        opacity: 1!important;
+        max-width: 100vw;
+        filter: blur(15px);
+        transition: 0.8s filter linear;
     }
     img.loaded {
-        opacity: 1;
-        transition: .3s filter  linear;
         filter: blur(0px);
         animation-name: none;
     }
-    .imagerow>div:first-child>img{
-        border-left: none;
+    .vue-gallery-image-wrapper {
+        align-self: center;
+        text-align: center;
+        overflow: hidden;
     }
-    .imagerow>div:last-child>img{
-        border-right: none;
+    .vue-gallery-row {
+        width: 100%;
+        display: flex;
+        align-content: center;
+    }
+    .vue-gallery-image {
+        height: 100%;
+        width: 100%;
+    }
+    .vue-gallery-text {
+        transition: bottom 0.3s;
+        font-family: Avenir, Helvetica, Arial, sans-serif;
+        position: absolute;
+        bottom: 0;
+        max-height: calc(100% - 1rem);
+        overflow-y: scroll;
+        width: calc(100% - 1rem);
+        color: white;
+        background: rgba(54, 54, 54, 0.8);
+        padding: 0.5rem;
+        word-wrap: break-word;
     }
 </style>

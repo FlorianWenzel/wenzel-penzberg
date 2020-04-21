@@ -1,7 +1,8 @@
 require('dotenv').config()
-const { DROPBOX_TOKEN, DEFAULT_PW, BACKEND_URL, DB_URL, IMAGE_PROXY} = process.env;
-
+const { DROPBOX_TOKEN, DEFAULT_PW, BACKEND_URL, DB_URL, IMAGE_PROXY, DROPBOX_PATH} = process.env;
+const jo = require('jpeg-autorotate');
 const app = require("express")();
+const imageSize = require("image-size");
 const http = require("http").createServer(app);
 const MongoClient = require("mongodb").MongoClient(DB_URL, {
   useUnifiedTopology: true
@@ -10,12 +11,9 @@ const bcrypt = require("bcryptjs");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const multerConfig = require("./multer.js");
-const jwt = require("jsonwebtoken");
-const { exec } = require("child_process");
 const fs = require("fs");
 const ExifImage = require("exif").ExifImage;
 const axios = require("axios");
-const path = require("path");
 const uuid = require("uuid/v4");
 const ObjectId = require("mongodb").ObjectId;
 const dropboxV2 = require('dropbox-v2-api');
@@ -144,7 +142,7 @@ app.post("/upload", multerConfig.saveToUploads, async (req, res) => {
   const src = await uploadToDropbox(path, filename);
   const meta = await getMeta(path);
   const thumbnail_url = await generateThumbnail(path, filename);
-  const image = { ...meta, parent: token, thumbnail_url, src, filename, valid: true};
+  const image = { ...meta, parent: token, thumbnail_url, src, filename};
   await db.images.insertOne({
     ...image
   });
@@ -194,7 +192,7 @@ app.post("/importFromDropbox", async (req, res) => {
   const meta = await getMeta(path);
 
   const image = {
-    ...meta, parent: token, filename, src, thumbnail_url
+    ...meta, parent: token, thumbnail_url, src, filename
   };
   await db.images.insertOne(image);
   res.send(image);
@@ -217,8 +215,8 @@ function generateThumbnail(path, filename){
   });
 }
 
-function uploadToDropbox(path, name){
-  const dropboxPath = `/wnzl/${name}`;
+async function uploadToDropbox(path, name){
+  const dropboxPath = `${DROPBOX_PATH}/${name}`;
   return new Promise((resolve, reject) => {
     dropbox({
       resource: 'files/upload',
@@ -256,20 +254,27 @@ function uploadToDropbox(path, name){
 
 function getMeta(path){
   return new Promise(resolve => {
-    new ExifImage(
-        { image: path },
-        async (error, meta) => {
-          if (error) {
-            resolve(null);
-          } else {
-            const width = meta.exif ? meta.exif.ExifImageWidth : undefined;
-            const height = meta.exif ? meta.exif.ExifImageHeight : undefined;
-            const orientation = meta.image ? meta.image.Orientation : 1;
-            resolve({meta, width, height, orientation});
-          }
-        }
-    );
-  });
+
+          new ExifImage(
+              { image: path },
+              async (error, meta) => {
+                if(!meta) meta = {};
+                const { width, height } = imageSize(path);
+                const orientation = meta.image ? meta.image.Orientation : 1;
+                if(orientation !== 1){
+                  await (jo.rotate(path, {quality: 100})
+                      .then(({buffer}) => {
+                        fs.writeFileSync(path, buffer);
+                        resolve(getMeta(path));
+                      })
+                      .catch(() => {
+                        resolve({meta, width, height});
+                      }))
+                }
+                resolve({meta, width, height});
+              }
+          );
+        });
 }
 
 app.get("/posts", async (req, res) => {

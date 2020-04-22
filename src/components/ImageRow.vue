@@ -9,7 +9,7 @@
                 :style="size[index]"
         >
             <img
-                    v-if="!loaded[index]"
+                    v-if="!loaded[index] && !noThumbnail"
                     :src="image.thumbnail_url"
                     @click="click(image)"
                     :alt="image.text ? image.text : ' '"
@@ -37,6 +37,7 @@
             "mobile",
             "borderStyle",
             "toggleTextOnClick",
+            "noThumbnail",
         ],
         data: function () {
             return {
@@ -108,6 +109,7 @@
         max-width: 100vw;
         filter: blur(15px);
         transition: 0.8s filter linear;
+        image-orientation: from-image;
     }
     img.loaded {
         filter: blur(0px);

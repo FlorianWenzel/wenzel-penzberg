@@ -5,6 +5,7 @@
         @click="imageClick"
         @close="imageToEdit = null"
         :key="amount"
+        :no-thumbnail="true"
         class="postImageRow"
         v-for="amount in Math.ceil(images.length /  (mobile ? 1 : 3))"
         :images="images.slice((amount - 1) * (mobile ? 1 : 3), amount *  (mobile ? 1 : 3))"
@@ -32,7 +33,8 @@
         >
         </div>
       </div>
-      <span class="w-100">Bilder werden hochgeladen <i class="fas fa-spinner fa-spin"></i></span>
+      <span class="w-100">Bilder werden hochgeladen</span>
+      <span class="w-100"><i class="fas fa-spinner fa-spin"></i></span>
     </div>
     <div class="form-row">
       <div class="col-12 mb-3">

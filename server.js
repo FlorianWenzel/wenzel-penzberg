@@ -19,7 +19,7 @@ const ObjectId = require("mongodb").ObjectId;
 const dropboxV2 = require('dropbox-v2-api');
 const dropbox = dropboxV2.authenticate({token: DROPBOX_TOKEN});
 const Jimp = require('jimp');
-app.use(bodyParser.json());
+app.use(bodyParser.json({limit: '100mb', extended: true}));
 let db;
 
 app.use(cors());

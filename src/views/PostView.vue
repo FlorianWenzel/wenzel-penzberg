@@ -1,15 +1,15 @@
 <template>
-  <form class="m-5" @submit="post">
-    <div class="p-3" v-if="notPushing">
+  <form :class="mobile ? 'm-1' : 'm-5'" @submit="post">
+    <div v-if="notPushing">
       <ImageRow
         @click="imageClick"
         @close="imageToEdit = null"
         :key="amount"
         class="postImageRow"
-        border-style="solid thin white"
-        v-for="amount in Math.ceil(images.length / 3.0)"
-        :images="images.slice((amount - 1) * 3, amount * 3)"
+        v-for="amount in Math.ceil(images.length /  (mobile ? 1 : 3))"
+        :images="images.slice((amount - 1) * (mobile ? 1 : 3), amount *  (mobile ? 1 : 3))"
         :amount="amount"
+        :mobile="mobile"
       />
     </div>
     <EditImageModal

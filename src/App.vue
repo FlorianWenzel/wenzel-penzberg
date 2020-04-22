@@ -32,6 +32,9 @@
       },
       editPost(post){
         this.postToEdit = post;
+      },
+      handleResize(){
+        this.mobile = window.innerWidth < 700;
       }
     },
     created() {
@@ -43,6 +46,9 @@
                 if(data)
                   this.user = data;
               })
+    },
+    mounted(){
+      window.addEventListener("resize", this.handleResize);
     }
   }
 </script>

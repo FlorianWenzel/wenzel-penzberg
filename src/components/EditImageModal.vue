@@ -4,7 +4,7 @@
             <img :src="image.src" height="auto" width="200px" style="max-height: 300px;" alt=" "><br>
             <label for="text">Text</label>
             <textarea id="text" class="form-control" rows="3" v-model="image.text" />
-            <div class="position-absolute w-100" style="bottom: 1rem;">
+            <div class="position-absolute w-100 p-3" style="bottom: 0; left: 0;">
                 <div class="d-flex m-0 mt-3">
                     <div class="w-50 pr-1">
                         <button type="button" @click="swapL" class="btn btn-info w-100"><i class="fas fa-chevron-left"></i><span v-if="!mobile"> nach links verschieben</span></button>

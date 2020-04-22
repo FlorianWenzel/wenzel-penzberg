@@ -5,8 +5,8 @@
                 @imageLoad="imageRowMounted"
                 :key="amount" @mounted="imageRowMounted"
                 @click="imageClick"
-                v-for="amount in Math.ceil(post.images.length / 3.0)"
-                :images="post.images.slice((amount - 1) * 3, ((amount) * 3))"
+                v-for="amount in Math.ceil(post.images.length / (mobile ? 1 : 3))"
+                :images="post.images.slice((amount - 1) * (mobile ? 1 : 3), ((amount) * (mobile ? 1 : 3)))"
                 :amount="amount"
                 :width="width"
                 :height="height"
@@ -32,7 +32,7 @@
     export default {
         name: "Post",
         components: {ImageRow},
-        props: ["post", "user"],
+        props: ["post", "user", "mobile"],
         data(){
             return {
                 width: 1000,
@@ -73,6 +73,8 @@
             }
         },
         mounted(){
+            this.width = this.$el.getBoundingClientRect().width;
+            this.height = this.$el.getBoundingClientRect().height;
             window.addEventListener("resize", this.handleResize);
         }
     }

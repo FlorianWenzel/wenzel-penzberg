@@ -6,11 +6,7 @@
                 :data-sub-html="image.text"
                 :data-src="image.src"
                 class="vue-gallery-image-wrapper"
-                :style="
-        size[index] +
-        ' position: relative; border: solid thick white;' +
-        (smoothResize ? 'transition: width .3s, height .3s;' : '')
-      "
+                :style="size[index]"
         >
             <img
                     v-if="!loaded[index]"
@@ -27,14 +23,6 @@
                     :alt="image.text ? image.text : ' '"
                     class="vue-gallery-image"
             />
-            <div
-                    v-if="image.text"
-                    @click="click(image)"
-                    class="vue-gallery-text"
-                    :style="hideText[index] ? 'bottom: -100%;' : ''"
-            >
-                {{ image.text }}
-            </div>
         </div>
     </div>
 </template>
@@ -46,8 +34,8 @@
             "images",
             "amount",
             "width",
+            "mobile",
             "borderStyle",
-            "smoothResize",
             "toggleTextOnClick",
         ],
         data: function () {
@@ -88,13 +76,6 @@
             },
             click(image) {
                 this.$emit("click", image);
-                if (this.toggleTextOnClick && image.text) {
-                    this.toggleText(image);
-                }
-            },
-            toggleText(image) {
-                const index = this.images.indexOf(image);
-                this.$set(this.hideText, index, !this.hideText[index]);
             },
             loadImage(image) {
                 const index = this.images.indexOf(image);
@@ -113,10 +94,7 @@
             width() {
                 this.updateSizes();
             },
-        },
-        mounted() {
-            this.updateSizes();
-        },
+        }
     };
 </script>
 
@@ -139,6 +117,9 @@
         align-self: center;
         text-align: center;
         overflow: hidden;
+        position: relative;
+        border: solid thick white;
+        transition: width .1s, height .1s;
     }
     .vue-gallery-row {
         width: 100%;
@@ -148,18 +129,5 @@
     .vue-gallery-image {
         height: 100%;
         width: 100%;
-    }
-    .vue-gallery-text {
-        transition: bottom 0.3s;
-        font-family: Avenir, Helvetica, Arial, sans-serif;
-        position: absolute;
-        bottom: 0;
-        max-height: calc(100% - 1rem);
-        overflow-y: scroll;
-        width: calc(100% - 1rem);
-        color: white;
-        background: rgba(54, 54, 54, 0.8);
-        padding: 0.5rem;
-        word-wrap: break-word;
     }
 </style>

@@ -5,7 +5,7 @@
         </div>
         <a v-if="path !== ''" @click="closeAlbum" class="btn btn-info m-3"><i class="fas fa-angle-left"></i> zurück</a>
         <div v-if="!refreshingAlbum && postsByAlbum[path]">
-            <Post @editPost="editPost" @imageClick="imageClick" :user="user" :key="index" :post="postsByAlbum[path][index - 1]" v-for="(index) in openAlbumAmountOfPosts"></Post>
+            <Post @editPost="editPost" @imageClick="imageClick" :mobile="mobile" :user="user" :key="index" :post="postsByAlbum[path][index - 1]" v-for="(index) in openAlbumAmountOfPosts"></Post>
             <Zoom :mobile="mobile" :images="openAlbumAllImages" :i="openIndex" @close="openIndex = -1"></Zoom>
             <infinite-loading @infinite="infiniteHandler">
                 <div slot="no-more"></div>

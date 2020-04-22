@@ -174,8 +174,9 @@
       </div>
     </div>
     <div class="form-row">
-      <div class="col-md-12 mb-3">
-        <button type="submit" class="btn btn-info">Eintragen!</button>
+      <div class="col mb-3">
+        <button type="submit" class="btn btn-info">{{id ? 'Editieren' : 'Eintragen'}}!</button>
+        <button v-if="id" type="button" @click="deletePost" class="btn ml-2 btn-danger">Löschen!</button>
       </div>
     </div>
   </form>
@@ -240,6 +241,20 @@ export default {
     }
   },
   methods: {
+    async deletePost(){
+      const {value: confirm} = await swalWithBootstrapButtons.fire({
+        text: "Sicher das du den Post entfernen willst?",
+        showCancelButton: true,
+        confirmButtonText: 'Löschen',
+        cancelButtonText: 'Abbrechen',
+        allowEnterKey: true,
+      })
+      if(confirm){
+        const token = localStorage.getItem('token');
+        await axios.post(`${env.backend_url}/deletePost`, {token, id: this.id});
+        swalWithBootstrapButtons.fire("Gelöscht.", "Der Post wurde gelöscht", "success");
+      }
+    },
     async saveText(filename, text) {
       for (const image of this.images) {
         if (image.filename === filename) {

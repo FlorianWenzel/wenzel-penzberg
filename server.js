@@ -96,6 +96,22 @@ app.post("/createAccount", async (req, res) => {
   await db.users.insertOne({ ...account, pwd, token: newToken });
   res.send({ success: true });
 });
+app.post("/deletePost", async (req, res) => {
+  const { token, id } = req.body;
+  const user = await db.users.findOne({ token });
+  if (!user || !user.permissions || !user.permissions.post) {
+    res.send({ success: false });
+    return;
+  }
+  const _id = ObjectId(id);
+  const post = db.posts.findOne({_id});
+  if(!post) return;
+  for(const image of post.images){
+    //TODO: delete images of post
+  }
+  await db.posts.deleteOne({_id});
+  res.send({success: true});
+})
 app.post("/deleteAccount", async (req, res) => {
   const { token, accountToDelete } = req.body;
   const user = await db.users.findOne({ token });

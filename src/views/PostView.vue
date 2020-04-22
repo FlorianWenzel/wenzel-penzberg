@@ -33,7 +33,7 @@
         >
         </div>
       </div>
-      <span class="w-100">Bilder werden hochgeladen</span>
+      <span class="w-100">Bilder werden hochgeladen</span> <br>
       <span class="w-100"><i class="fas fa-spinner fa-spin"></i></span>
     </div>
     <div class="form-row">

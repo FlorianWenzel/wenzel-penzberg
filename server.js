@@ -139,8 +139,8 @@ app.post("/upload", multerConfig.saveToUploads, async (req, res) => {
   }
   const { filename } = file;
   const path =`/tmp/${filename}`
-  const src = await uploadToDropbox(path, filename);
   const meta = await getMeta(path);
+  const src = await uploadToDropbox(path, filename);
   const thumbnail_url = await generateThumbnail(path, filename);
   const image = { ...meta, parent: token, thumbnail_url, src, filename};
   await db.images.insertOne({
@@ -187,9 +187,9 @@ app.post("/importFromDropbox", async (req, res) => {
     .then(response => Buffer.from(response.data, "binary"));
   fs.writeFileSync(path, imageBuffer);
 
+  const meta = await getMeta(path);
   const src = await uploadToDropbox(path, filename);
   const thumbnail_url = await generateThumbnail(`/tmp/${filename}`);
-  const meta = await getMeta(path);
 
   const image = {
     ...meta, parent: token, thumbnail_url, src, filename

@@ -389,12 +389,14 @@ export default {
   mounted() {
     if (!window.location.href.includes("?id=")) {
       this.readableTimestamp = this.dateToInputFormat(new Date());
+    }else if(this.postToEdit !== null){
+      this.id = this.postToEdit._id;
     }
-    this.id = window.location.href.split("?id=")[1];
 
     if (!(this.postToEdit && this.postToEdit._id === this.id)) return;
 
     for (const key in this.postToEdit) {
+      if(key === 'id') continue;
       this[key] = this.postToEdit[key];
     }
     if (this.postToEdit.timestamp) {

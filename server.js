@@ -7,6 +7,8 @@ const http = require("http").createServer(app);
 const MongoClient = require("mongodb").MongoClient(DB_URL, {
   useUnifiedTopology: true
 });
+const VideoThumbnailGenerator = require('video-thumbnail-generator').default;
+const getVideoDimensions = require('get-video-dimensions');
 const bcrypt = require("bcryptjs");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -149,21 +151,31 @@ app.post("/upload", multerConfig.saveToUploads, async (req, res) => {
   const { token } = req.body;
   const { file } = req;
   const user = await db.users.findOne({ token });
-  if (!file || !user || !file.mimetype.includes("image")){
+
+  if (!file || !user){
     res.status(500);
     return;
   }
-  const { filename } = file;
-  const path =`/tmp/${filename}`
+  const { filename, path } = file;
+
+  const extention = filename.split('.').pop();
+  let type = 'image';
+  if(extention === 'mp4'){
+    type = 'video';
+  }
+
   const meta = await getMeta(path);
+
   const src = await uploadToDropbox(path, filename);
   const thumbnail_url = await generateThumbnail(path, filename);
-  const image = { ...meta, parent: token, thumbnail_url, src, filename};
+
+  const image = { ...meta, parent: token, thumbnail_url, src, filename, type};
   await db.images.insertOne({
     ...image
   });
   res.send(image);
 });
+
 app.get("/image/:encoded_filename", async (req, res) => {
   const { encoded_filename } = req.params;
   const filename = decodeURIComponent(encoded_filename);
@@ -197,7 +209,10 @@ app.post("/importFromDropbox", async (req, res) => {
   const extention = url.replace('?raw=1','').split('.').pop();
   const filename = `${uuid()}.${extention}`;
   const path = `/tmp/${filename}`;
-
+  let type = 'image';
+  if(extention === 'mp4'){
+    type = 'video';
+  }
   const imageBuffer = await axios
     .get(url, { responseType: "arraybuffer" })
     .then(response => Buffer.from(response.data, "binary"));
@@ -205,20 +220,30 @@ app.post("/importFromDropbox", async (req, res) => {
 
   const meta = await getMeta(path);
   const src = await uploadToDropbox(path, filename);
-  const thumbnail_url = await generateThumbnail(`/tmp/${filename}`);
+  const thumbnail_url = await generateThumbnail(`/tmp/${filename}`, filename);
 
   const image = {
-    ...meta, parent: token, thumbnail_url, src, filename
+    ...meta, parent: token, thumbnail_url, src, filename, type
   };
   await db.images.insertOne(image);
   res.send(image);
 });
 
-function generateThumbnail(path, filename){
-  if(!filename)
-    filename = `${uuid()}.jpg`;
+async function generateThumbnail(path, filename){
+  const extention = filename.split('.').pop();
+
+  if(extention === 'mp4'){
+    path = await new Promise((resolve) => {
+      new VideoThumbnailGenerator({sourcePath: path, thumbnailPath: '/tmp/'})
+      .generateOneByPercent(1)
+      .then((filename) => {
+        resolve('/tmp/' + filename)
+      })
+    })
+    filename = filename.replace(extention, '.png');
+  }
   const thumbnailPath = `/tmp/thumbnail/${filename}`;
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     Jimp.read(path, (err, image) => {
       if (err) throw err;
       image
@@ -270,26 +295,33 @@ async function uploadToDropbox(path, name){
 
 function getMeta(path){
   return new Promise(resolve => {
-
-          new ExifImage(
-              { image: path },
-              async (error, meta) => {
-                if(!meta) meta = {};
-                const { width, height } = imageSize(path);
-                const orientation = meta.image ? meta.image.Orientation : 1;
-                if(orientation !== 1){
-                  await (jo.rotate(path, {quality: 100})
-                      .then(({buffer}) => {
-                        fs.writeFileSync(path, buffer);
-                        resolve(getMeta(path));
-                      })
-                      .catch(() => {
-                        resolve({meta, width, height});
-                      }))
+          const extention = path.split('.').pop();
+          if(extention === 'mp4'){
+            getVideoDimensions(path)
+                .then((dimensions) => {
+                  resolve({...dimensions})
+                })
+          }else{
+            new ExifImage(
+                { image: path },
+                async (error, meta) => {
+                  if(!meta) meta = {};
+                  const { width, height } = imageSize(path);
+                  const orientation = meta.image ? meta.image.Orientation : 1;
+                  if(orientation !== 1){
+                    await (jo.rotate(path, {quality: 100})
+                        .then(({buffer}) => {
+                          fs.writeFileSync(path, buffer);
+                          resolve(getMeta(path));
+                        })
+                        .catch(() => {
+                          resolve({meta, width, height});
+                        }))
+                  }
+                  resolve({meta, width, height});
                 }
-                resolve({meta, width, height});
-              }
-          );
+            );
+          }
         });
 }
 

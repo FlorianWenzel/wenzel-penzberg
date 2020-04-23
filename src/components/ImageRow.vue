@@ -16,6 +16,7 @@
                     class="vue-gallery-image"
             />
             <img
+                    v-if="image.type !== 'video'"
                     :src="image.src"
                     @load="loadImage(image)"
                     @click="click(image)"
@@ -23,6 +24,20 @@
                     :alt="image.text ? image.text : ' '"
                     class="vue-gallery-image"
             />
+            <video
+                    v-if="image.type === 'video'"
+                    @click="click(image)"
+                    muted
+                    loop
+                    @loadeddata="loadImage(image)"
+                    class="vue-gallery-image"
+                    :style="getBackground(image)"
+                    :src="image.src"
+                    autoplay
+            >
+                <source :src="image.src" type="video/mp4">
+            </video>
+
         </div>
     </div>
 </template>
@@ -100,10 +115,10 @@
 </script>
 
 <style scoped>
-    img:hover {
+    img:hover, video:hover{
         cursor: pointer;
     }
-    img {
+    img, video {
         background-size: cover;
         background-position: center;
         max-width: 100vw;
@@ -111,17 +126,17 @@
         transition: 0.8s filter linear;
         image-orientation: from-image;
     }
-    img.loaded {
+    img.loaded, video {
         filter: blur(0px);
         animation-name: none;
     }
     .vue-gallery-image-wrapper {
+        border: solid thick white;
         align-self: center;
         text-align: center;
         overflow: hidden;
         position: relative;
-        border: solid thick white;
-        transition: width .1s, height .1s;
+        transition: width .3s, height .3s;
     }
     .vue-gallery-row {
         width: 100%;
@@ -129,7 +144,7 @@
         align-content: center;
     }
     .vue-gallery-image {
-        height: 100%;
+        max-height: 100%;
         width: 100%;
     }
 </style>

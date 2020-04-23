@@ -28,7 +28,8 @@ import Swal from "sweetalert2";
                             ".gif",
                             ".png",
                             ".jpeg",
-                            ".jpg"
+                            ".jpg",
+                            ".mp4",
                         ],
                         folderselect: false, // or true
                         sizeLimit: 102400000 // or any positive number

@@ -37,13 +37,13 @@
       <span class="w-100"><i class="fas fa-spinner fa-spin"></i></span>
     </div>
     <div class="form-row">
-      <div class="col-12 mb-3">
+      <div class="col-12 mb-1">
         <div class="input-group">
           <div class="custom-file">
             <input
               type="file"
               @change="selectFile"
-              accept="image/x-png,image/gif,image/jpeg"
+              accept="image/x-png,image/gif,image/jpeg,video/mp4"
               class="custom-file-input"
               id="inputGroupFile04"
               :disabled="importing"
@@ -56,13 +56,13 @@
         </div>
       </div>
     </div>
-    <div class="form-row my-3">
-      <div class="col-6">
-        <DropboxChooser :disabled="importing" @addFromDropbox="addFromDropbox"></DropboxChooser>
+    <div class="form-row my-1">
+      <div class="col-12">
+        <DropboxChooser :disabled="importing" @addFromDropbox="addFromDropbox" />
       </div>
-      <div class="col-6">
-        <OnedriveChooser></OnedriveChooser>
-      </div>
+      <p class="w-100">
+        Mögliche Datentypen sind <strong>.gif</strong>, <strong>.png</strong>, <strong>.jpeg</strong>, <strong>.jpg</strong> oder <strong>.mp4</strong>
+      </p>
     </div>
     <div class="form-row mt-5">
       <div class="col-md-12 mb-3">
@@ -186,7 +186,6 @@
 import axios from "axios";
 import Swal from "sweetalert2";
 import DropboxChooser from "../components/DropboxChooser";
-import OnedriveChooser from "../components/OnedriveChooser";
 import ImageRow from "../components/ImageRow";
 import Tags from "../components/Tags";
 import * as env from "../assets/env";
@@ -208,8 +207,7 @@ export default {
     Editor,
     Tags,
     ImageRow,
-    DropboxChooser,
-    OnedriveChooser
+    DropboxChooser
   },
   data: function() {
     return {
@@ -305,7 +303,6 @@ export default {
       }
     },
     async addFromDropbox(files) {
-      //TODO only allow when non are qued
       this.importing = true;
       this.importPromises = new Array(files.length);
       for (const index in files) {
@@ -333,6 +330,7 @@ export default {
       if(this.completed_promises === this.importPromises.length){
         this.importing = false;
         this.completed_promises = 0;
+        this.percent_done = 0;
       }
     },
     upload() {

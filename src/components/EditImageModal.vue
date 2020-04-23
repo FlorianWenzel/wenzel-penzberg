@@ -1,7 +1,19 @@
 <template>
     <modal name="EditImageModal" :width="modalWidth" :height="500" :minWidth="300" @before-open="loadImage">
         <div class="p-3 text-center position-relative w-100 h-100">
-            <img :src="image.src" height="auto" width="200px" style="max-height: 300px;" alt=" "><br>
+            <img v-if="image.type !== 'video'" :src="image.src" height="auto" width="200px" style="max-height: 300px;" alt=" ">
+            <video
+                    v-if="image.type === 'video'"
+                    muted
+                    loop
+                    class="vue-gallery-image"
+                    :src="image.src"
+                    autoplay
+                    style="max-height: 300px;"
+            >
+                <source :src="image.src" type="video/mp4">
+            </video>
+            <br>
             <label for="text">Text</label>
             <textarea id="text" class="form-control" rows="3" v-model="image.text" />
             <div class="position-absolute w-100 p-3" style="bottom: 0; left: 0;">

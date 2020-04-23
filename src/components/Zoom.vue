@@ -3,7 +3,22 @@
         <div v-if="playing" class="progress bg-transparent">
             <div class="progress-bar h-25 bg-info" role="progressbar" :aria-valuenow="progressValue" :aria-valuemin="0"  :style="'width: ' + progressValue + 'vw;'" aria-valuemax="100"></div>
         </div>
-        <img @click="play" v-touch:swipe="swipe" :src="images[index].src" alt="">
+        <video
+                v-if="images[index].type === 'video'"
+                controls
+                autoplay
+                v-touch:swipe="swipe"
+                :src="images[index].src"
+        >
+            <source :src="images[index].src" type="video/mp4">
+        </video>
+        <img
+                v-if="images[index].type !== 'video'"
+                @click="play"
+                v-touch:swipe="swipe"
+                :src="images[index].src"
+                :alt="images[index].text"
+        >
         <div v-if="images.length !== 1 && !(isTouch() && mobile)" @click="previous" class="prev"><i class="fas fa-angle-left fa-2x text-light"></i></div>
         <div v-if="false" class="play" @click="play">
             <i v-if="!playing" class="fas fa-play text-light"></i>

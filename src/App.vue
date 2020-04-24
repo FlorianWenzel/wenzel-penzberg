@@ -53,6 +53,9 @@
   }
 </script>
 <style>
+  html, body {
+    background-color: #2a7118;
+  }
   #app {
     font-family: Avenir, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -62,6 +65,7 @@
   }
   #content {
     padding-top: 20px;
+    background-color: white;
   }
   .viewer-canvas{
     background: #363636;

@@ -141,7 +141,7 @@
     * {
         overflow: hidden;
     }
-    img {
+    img, video {
         max-height: 100vh;
         max-width: 100vw;
     }

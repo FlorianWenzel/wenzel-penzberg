@@ -233,9 +233,10 @@ async function generateThumbnail(path, filename){
   const extention = filename.split('.').pop();
 
   if(extention === 'mp4'){
+    const { width, height } = await getMeta(path);
     path = await new Promise((resolve) => {
       new VideoThumbnailGenerator({sourcePath: path, thumbnailPath: '/tmp/'})
-      .generateOneByPercent(1)
+      .generateOneByPercent(1, {size: `${width}x${height}`})
       .then((filename) => {
         resolve('/tmp/' + filename)
       })
@@ -387,9 +388,11 @@ app.post("/post", async (req, res) => {
     res.sendStatus(666);
     return;
   }
+  let edit = false;
   if (id) {
     const _id = ObjectId(id);
-    const res = await db.posts.updateOne(
+    edit = true;
+    await db.posts.updateOne(
       { _id },
       {
         $set: {
@@ -402,7 +405,7 @@ app.post("/post", async (req, res) => {
       title, images, tags, text, publicity, timestamp, parent, album, id, hide_date, hide_author
     });
   }
-  res.send({ valid: true });
+  res.send({ valid: true, edit});
 });
 app.get("*", async (req, res) => {
   res.sendFile(__dirname + "/dist/index.html");

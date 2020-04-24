@@ -250,7 +250,7 @@ export default {
       if(confirm){
         const token = localStorage.getItem('token');
         await axios.post(`${env.backend_url}/deletePost`, {token, id: this.id});
-        swalWithBootstrapButtons.fire("Gelöscht.", "Der Post wurde gelöscht", "success");
+        swalWithBootstrapButtons.fire("Gelöscht.", "Der Eintrag wurde gelöscht", "success");
       }
     },
     async saveText(filename, text) {
@@ -368,16 +368,24 @@ export default {
         title, images, tags, text, publicity, album, id, timestamp, hide_date, hide_author, parent: localStorage.getItem("token")
       };
       axios.post(env.backend_url + "/post", post).then(({data}) => {
-        const {valid} = data;
-        if (!valid) console.log("not valid...");
-        else {
+        const {valid, edit} = data;
+        if (!valid){
+          console.log("not valid...");
+          return;
+        } else if(!edit) {
           swalWithBootstrapButtons.fire(
               "Erstellt!",
               "Beitrag wurde erstellt",
               "success"
           );
-          this.$router.push("/");
+        }else{
+          swalWithBootstrapButtons.fire(
+              "Editiert!",
+              "Beitrag wurde editiert",
+              "success"
+          );
         }
+        this.$router.push("/");
       });
     },
     dateToInputFormat(date) {

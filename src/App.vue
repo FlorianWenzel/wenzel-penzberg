@@ -66,6 +66,7 @@
   #content {
     padding-top: 20px;
     background-color: white;
+    min-height: 100vh;
   }
   .viewer-canvas{
     background: #363636;

@@ -382,7 +382,6 @@ app.post("/check_version", (req, res) => {
   const { version } = req.body;
   const currentVersion = require('./package.json').version;
   const update = version !== currentVersion;
-  console.log(update);
   res.send({update});
 })
 

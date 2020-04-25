@@ -6,7 +6,7 @@
                 :data-sub-html="image.text"
                 :data-src="image.src"
                 class="vue-gallery-image-wrapper"
-                :style="size[index]"
+                :style="size[index] + getBackground(image)"
         >
             <img
                     v-if="!loaded[index] && !noThumbnail"
@@ -100,7 +100,7 @@
                 this.$emit("imageLoad", event);
             },
             getBackground(image) {
-                return `background-image: url('${image.thumbnail_url}');`;
+                return ` background-image: url('${image.thumbnail_url}');`;
             },
         },
         watch: {
@@ -132,6 +132,8 @@
     }
     .vue-gallery-image-wrapper {
         border: solid thick white;
+        background-size: cover;
+        background-repeat: no-repeat;
         align-self: center;
         text-align: center;
         overflow: hidden;

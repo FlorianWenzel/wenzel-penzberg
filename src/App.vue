@@ -8,6 +8,7 @@
   </div>
 </template>
 <script>
+  const VERSION = "1.0.0"
   import Navbar from './components/Navbar.vue'
   import axios from "axios";
   import * as env from "./assets/env.js";
@@ -46,6 +47,11 @@
                 if(data)
                   this.user = data;
               })
+      axios.post(env.backend_url + '/check_version', {version: VERSION})
+      .then(({data}) => {
+        if(data.update)
+          location.reload(true);
+      })
     },
     mounted(){
       window.addEventListener("resize", this.handleResize);

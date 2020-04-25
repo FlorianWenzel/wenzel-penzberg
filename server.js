@@ -325,7 +325,6 @@ function getMeta(path){
           }
         });
 }
-
 app.get("/posts", async (req, res) => {
   const { token } = req.query;
   let posts = await db.posts.find({ publicity: "public" }).toArray();
@@ -379,6 +378,14 @@ app.get("/posts", async (req, res) => {
   }
   res.send(result);
 });
+app.post("/check_version", (req, res) => {
+  const { version } = req.body;
+  const currentVersion = require('./package.json').version;
+  const update = version !== currentVersion;
+  console.log(update);
+  res.send({update});
+})
+
 app.post("/post", async (req, res) => {
   const {
     title, images, tags, text, publicity, timestamp, parent, album, id, hide_date, hide_author

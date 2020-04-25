@@ -55,6 +55,10 @@
 <style>
   html, body {
     background-color: #2a7118;
+    position: fixed;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
   }
   #app {
     font-family: Avenir, Helvetica, Arial, sans-serif;
@@ -63,10 +67,14 @@
     text-align: center;
     color: #2c3e50;
   }
+  body > .mainwrapper {
+  }
   #content {
     padding-top: 20px;
     background-color: white;
-    min-height: 100vh;
+    width: 100vw;
+    height: 100vh;
+    overflow-y: scroll;
   }
   .viewer-canvas{
     background: #363636;

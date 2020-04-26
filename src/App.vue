@@ -10,8 +10,8 @@
 <script>
   const VERSION = "1.0.0"
   import Navbar from './components/Navbar.vue'
-  import axios from "axios";
   import * as env from "./assets/env.js";
+  import { post } from "./assets/cache.js";
 
   export default {
     name: 'App',
@@ -38,23 +38,24 @@
         this.mobile = window.innerWidth < 700;
       }
     },
-    created() {
+    mounted(){
+      window.addEventListener("resize", this.handleResize);
+    },
+    created(){
+
       const token = localStorage.getItem('token');
       if(window.innerWidth < 700)
         this.mobile = true;
-      axios.post(env.backend_url + '/check_token', {token})
-              .then(({data}) => {
-                if(data)
-                  this.user = data;
-              })
-      axios.post(env.backend_url + '/check_version', {version: VERSION})
-      .then(({data}) => {
-        if(data.update)
-          location.reload(true);
-      })
-    },
-    mounted(){
-      window.addEventListener("resize", this.handleResize);
+      post(env.backend_url + '/check_token', {token})
+          .then(({data}) => {
+            if(data)
+              this.user = data;
+          })
+      post(env.backend_url + '/check_version', {version: VERSION})
+          .then(({data}) => {
+            if(data.update)
+              location.reload(true);
+          })
     }
   }
 </script>

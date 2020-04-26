@@ -11,11 +11,11 @@
     </div>
 </template>
 <script>
-import axios from 'axios';
 import * as env from '../assets/env';
 import Post from "../components/Post";
 import InfiniteLoading from 'vue-infinite-loading';
 import Zoom from "../components/Zoom";
+import { get } from '../assets/cache.js';
 
 export default {
     name: 'Home',
@@ -32,7 +32,7 @@ export default {
     methods: {
         async infiniteHandler($state){
             if(this.posts.length === 0){
-                this.posts = await axios.get(env.backend_url + '/posts?token=' + localStorage.getItem('token'))
+                this.posts = await get(env.backend_url + '/posts?token=' + localStorage.getItem('token'))
                     .then(({data}) => {
                         for(const post of data){
                             for(const image of post.images){

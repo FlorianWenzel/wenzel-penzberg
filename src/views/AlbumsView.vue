@@ -18,12 +18,13 @@
 </template>
 
 <script>
-    import axios from "axios";
     import Album from "../components/Album";
     import * as env from '../assets/env';
     import Post from "../components/Post";
     import InfiniteLoading from 'vue-infinite-loading';
     import Zoom from "../components/Zoom";
+    import { get } from "../assets/cache.js";
+
     let _this;
 
     export default {
@@ -94,7 +95,7 @@
                 const location = window.location;
                 const albumInURL = decodeURIComponent(location.pathname.split('/').splice(2).join('/'));
                 const token = localStorage.getItem('token');
-                await axios.get(env.backend_url + '/posts?token=' + token)
+                await get(env.backend_url + '/posts?token=' + token)
                     .then(({data}) => {
                         this.posts = data;
                         for(const post of this.posts){

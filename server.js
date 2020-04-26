@@ -108,9 +108,6 @@ app.post("/deletePost", async (req, res) => {
   const _id = ObjectId(id);
   const post = db.posts.findOne({_id});
   if(!post) return;
-  for(const image of post.images){
-    //TODO: delete images of post
-  }
   await db.posts.deleteOne({_id});
   res.send({success: true});
 })

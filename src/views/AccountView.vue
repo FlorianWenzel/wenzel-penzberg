@@ -10,7 +10,7 @@
                         <th scope="col">Kann sehen</th>
                         <th scope="col">Kann Einträge erstellen</th>
                         <th scope="col">Kann Accounts erstellen</th>
-                        <th scope="col">Löschen</th>
+                        <th v-if="online" scope="col">Löschen</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -19,7 +19,7 @@
                         <td>{{getPublicityString(user.publicity)}}</td>
                         <td><i v-if="user.permissions.post" class="fas fa-check"></i><i v-if="!user.permissions.post" class="fas fa-times"></i></td>
                         <td><i v-if="user.admin" class="fas fa-check"></i><i v-if="!user.admin" class="fas fa-times"></i></td>
-                        <td>
+                        <td v-if="online">
                             <button @click="deleteAccount(user)" type="button" class="btn btn-danger px-2 py-0"><i class="fas fa-times"></i></button>
                         </td>
                     </tr>
@@ -32,19 +32,19 @@
                 <div class="form-row">
                     <div class="col-md-12 mb-3">
                         <label for="username">Benutzername</label>
-                        <input type="text" class="form-control" v-model="newAccount.username" id="username" placeholder="Benutzername" required>
+                        <input type="text" :disabled="!online" class="form-control" v-model="newAccount.username" id="username" placeholder="Benutzername" required>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="col-md-12 mb-3">
                         <label for="password">Passwort</label>
-                        <input type="text" class="form-control" v-model="newAccount.password" id="password" placeholder="Passwort" required>
+                        <input type="text" :disabled="!online" class="form-control" v-model="newAccount.password" id="password" placeholder="Passwort" required>
                     </div>
                 </div>
                 <div class="form-row mb-3">
                     <div class="col-lg">
                         <label for="publicity"><i class="fas fa-eye"></i> Kann sehen:</label>
-                        <select id="publicity" v-model="newAccount.publicity" class="custom-select" name="publicity" required>
+                        <select id="publicity" :disabled="!online" v-model="newAccount.publicity" class="custom-select" name="publicity" required>
                             <option value="">Bitte auswählen...</option>
                             <option value="public">Öffentlich</option>
                             <option value="other">Die Anderen</option>
@@ -57,16 +57,16 @@
                 <div class="text-left form-group">
                     <div class="form-row">
                         <div class="col-md mb-3">
-                            <input type="checkbox" id="canPost" v-model="newAccount.admin"> <label for="canPost"> Kann Accounts erstellen</label>
+                            <input type="checkbox" :disabled="!online" id="canPost" v-model="newAccount.admin"> <label for="canPost"> Kann Accounts erstellen</label>
                         </div>
                         <div class="col-md mb-3">
-                            <input type="checkbox" id="admin" v-model="newAccount.permissions.post"> <label for="admin"> Kann Einträge erstellen</label>
+                            <input type="checkbox" :disabled="!online" id="admin" v-model="newAccount.permissions.post"> <label for="admin"> Kann Einträge erstellen</label>
                         </div>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="col-md-12">
-                        <button type="submit" class="btn btn-info">Erstellen</button>
+                        <button type="submit" :disabled="!online" class="btn btn-info">Erstellen</button>
                     </div>
                 </div>
             </form>
@@ -83,6 +83,7 @@
     import axios from 'axios';
     import Swal from 'sweetalert2';
     import * as env from '../assets/env';
+    import { post, reset } from '../assets/cache.js';
     const swalWithBootstrapButtons = Swal.mixin({
         customClass: {
             confirmButton: 'btn btn-info mr-1',
@@ -93,7 +94,7 @@
 
     export default {
         name: "AccountView",
-        props: ['user'],
+        props: ['user', 'online'],
         methods: {
             createAccount(event){
                 axios.post(env.backend_url + '/createAccount', {token: localStorage.getItem('token'), account: this.newAccount})
@@ -116,7 +117,7 @@
                 event.preventDefault();
             },
             refreshUsers(){
-                axios.post(env.backend_url + '/getAllUsers', {token:localStorage.getItem('token')})
+                post(env.backend_url + '/getAllUsers', {token:localStorage.getItem('token')})
                     .then(({data}) => {
                         this.users = data.users;
                     })
@@ -143,9 +144,10 @@
                     }
                 })
             },
-            logout(){
+            async logout(){
               localStorage.clear();
-              window.location = '/';
+              await reset();
+              window.location.reload(true);
             },
             getPublicityString(publicity){
                 switch (publicity) {
@@ -174,7 +176,14 @@
                 users: []
             }
         },
-        created() {
+        watch: {
+            user(){
+                if(this.user && this.user.admin){
+                    this.refreshUsers();
+                }
+            }
+        },
+        mounted() {
             if(this.user && this.user.admin){
                 this.refreshUsers();
             }

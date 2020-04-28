@@ -1,12 +1,10 @@
 import axios from 'axios';
-import { openDB } from 'idb';
+import { openDB, deleteDB} from 'idb';
 import md5 from 'md5';
 const DB_VERION = 1;
-let db;
+
 async function loadDB(){
-  if(db)
-    return db;
-  db = await  openDB("requests", DB_VERION, {
+  const db = await  openDB("requests", DB_VERION, {
     upgrade: (db) => {
       db.createObjectStore('get');
       db.createObjectStore('post');
@@ -15,48 +13,78 @@ async function loadDB(){
   return db;
 }
 const post = (url, data) => {
-  return new Promise((resolve, reject) => {
-      const p = axios.post(url, data)
-      p.catch(() => {
-        getRequest({type: 'post', url, data})
-        .then(response => {
-          if(response)
-            resolve(response)
-          else
-            reject();
-        })
-      })
-      p.then(e => {
-        storeRequest({type: 'post', url, data}, e)
-        .then(() => resolve(e));
-      })
-  })
-}
-
-const get = url => {
-  return new Promise((resolve, reject) => {
-    const p = axios.get(url)
-    p.catch(() => {
-      getRequest({type: 'get', url})
+  if(navigator.onLine)
+    return new Promise((resolve, reject) => {
+        const p = axios.post(url, data)
+        p.catch(() => {
+          getRequest({type: 'post', url, data})
           .then(response => {
             if(response)
               resolve(response)
             else
               reject();
           })
-    })
-    p.then(e => {
-      storeRequest({type: 'get', url}, e)
+        })
+        p.then(e => {
+          storeRequest({type: 'post', url, data}, e)
           .then(() => resolve(e));
+        })
     })
+  else
+    return new Promise((resolve, reject) => {
+      getRequest({type: 'post', url, data})
+          .then(response => {
+            if(response)
+              resolve(response)
+            else
+              reject();
+          })
   })
 }
 
+const get = url => {
+  if(navigator.onLine)
+    return new Promise((resolve, reject) => {
+      const p = axios.get(url)
+      p.catch(() => {
+        getRequest({type: 'get', url})
+            .then(response => {
+              if(response)
+                resolve(response);
+              else
+                reject();
+            })
+      })
+      p.then(e => {
+        storeRequest({type: 'get', url}, e)
+            .then(() => resolve(e));
+      })
+    })
+  else
+    return new Promise((resolve, reject) => {
+      getRequest({type: 'get', url})
+          .then(response => {
+            if(response)
+              resolve(response);
+            else
+              reject();
+          })
+    })
+}
+
+const reset = () => {
+  return deleteDB('requests', {
+    blocked() {
+      console.log('ressource blocked :/')
+    }
+  });
+}
+
 async function getRequest(req){
-  await loadDB();
+  const db = await loadDB();
   const reqHash = md5(JSON.stringify(req));
-  console.log('trying to load... ', reqHash);
-  const res = await  db.get(req.type, reqHash);
+  const res = await db.get(req.type, reqHash);
+  await db.close();
   if(res){
     return JSON.parse(res);
   }else{
@@ -65,9 +93,10 @@ async function getRequest(req){
 }
 
 async function storeRequest(req, res){
-  await loadDB();
+  const db = await loadDB();
   const reqHash = md5(JSON.stringify(req));
   res = JSON.stringify(res);
   await db.put(req.type, res, reqHash)
+  await db.close();
 }
-export { post, get};
+export { post, get, reset};

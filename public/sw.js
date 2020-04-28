@@ -6,35 +6,24 @@ if (workbox) {
   console.log(`Boo! Workbox didn't load 😬`);
 }
 workbox.routing.registerRoute(
-    /\.(?:js|css|html)$/,
+    /\/image\//,
     new workbox.strategies.StaleWhileRevalidate({
-      "cacheName": "assets",
+      "cacheName": "images",
       puglins: [
         new workbox.expiration.Plugin({
           maxEntries: 50,
-          maxAgeSecounds: 3650000
+          maxAgeSecounds: 31556952
         })
       ]
     }))
 workbox.routing.registerRoute(
     /\//,
     new workbox.strategies.StaleWhileRevalidate({
-      "cacheName": "index",
+      "cacheName": "assets",
       puglins: [
         new workbox.expiration.Plugin({
           maxEntries: 50,
-          maxAgeSecounds: 3650000
-        })
-      ]
-    }))
-workbox.routing.registerRoute(
-    /\.(?:png|gif|jpg|jpeg|webp|svg|mp4)$/,
-    new workbox.strategies.CacheFirst({
-      "cacheName": "images",
-      puglins: [
-        new workbox.expiration.Plugin({
-          maxEntries: 50,
-          maxAgeSecounds: 3650000
+          maxAgeSecounds: 31556952
         })
       ]
     }))

@@ -46,7 +46,7 @@
               accept="image/x-png,image/gif,image/jpeg,video/mp4"
               class="custom-file-input"
               id="inputGroupFile04"
-              :disabled="importing"
+              :disabled="importing || !online"
               multiple="multiple"
             />
             <label class="custom-file-label" for="inputGroupFile04">
@@ -58,7 +58,7 @@
     </div>
     <div class="form-row my-1">
       <div class="col-12">
-        <DropboxChooser :disabled="importing" @addFromDropbox="addFromDropbox" />
+        <DropboxChooser :disabled="importing || !online" @addFromDropbox="addFromDropbox" />
       </div>
       <p class="w-100">
         Mögliche Datentypen sind <strong>.gif</strong>, <strong>.png</strong>, <strong>.jpeg</strong>, <strong>.jpg</strong> oder <strong>.mp4</strong>
@@ -71,6 +71,7 @@
           class="form-control"
           v-model="title"
           placeholder="Titel"
+          :disabled="!online"
           required
         />
       </div>
@@ -78,7 +79,7 @@
     <div class="form-row">
       <div class="col-md-12 mb-3">
         <div class="form-group">
-          <Editor v-model="text" :text="text"></Editor>
+          <Editor v-model="text" :disabled="!online" :text="text"></Editor>
         </div>
       </div>
     </div>
@@ -89,7 +90,13 @@
           <i class="fas fa-tags"></i> Tags <br />
           <small>Enter, um Tag hinzuzufügen</small>
         </label>
-        <Tags id="tags" required="required" pattern="^$" :tags="tags"></Tags>
+        <Tags
+                id="tags"
+                required="required"
+                :disabled="!online"
+                pattern="^$"
+                :tags="tags"
+        />
       </div>
       <div class="col-lg my-2">
         <label for="date">
@@ -103,21 +110,22 @@
           placeholder="YYYY-MM-DD"
           class="form-control"
           type="date"
+          :disabled="!online"
           v-model="readableTimestamp"
         />
       </div>
     </div>
     <div class="form-row mb-3">
       <div class="col-lg">
-        <label for="publicity"
-          ><i class="fas fa-eye"></i> Sehbar von: <br /><small
-            >(wer den Eintrag sehen kann)</small
-          ></label
-        >
+        <label for="publicity">
+          <i class="fas fa-eye"></i> Sehbar von: <br />
+          <small>(wer den Eintrag sehen kann)</small>
+        </label>
         <select
           id="publicity"
           v-model="publicity"
           class="custom-select"
+          :disabled="!online"
           name="publicity"
           required
         >
@@ -130,15 +138,15 @@
         </select>
       </div>
       <div class="col-lg">
-        <label for="album"
-          ><i class="fas fa-folder"></i> Album<br /><small
-            >(wird erstellt, falls es noch nicht existiert)</small
-          ></label
-        >
+        <label for="album">
+          <i class="fas fa-folder"></i> Album<br />
+          <small>(wird erstellt, falls es noch nicht existiert)</small>
+        </label>
         <input
           type="text"
           class="form-control"
           id="album"
+          :disabled="!online"
           v-model="album"
           placeholder="Album"
         />
@@ -151,6 +159,7 @@
             id="hide_author"
             class="form-check-input"
             type="checkbox"
+            :disabled="!online"
             v-model="hide_author"
           />
           <label for="hide_author" class="form-check-label">
@@ -164,6 +173,7 @@
             id="hide_date"
             class="form-check-input"
             type="checkbox"
+            :disabled="!online"
             v-model="hide_date"
           />
           <label for="hide_date" class="form-check-label">
@@ -175,7 +185,13 @@
     </div>
     <div class="form-row">
       <div class="col mb-3">
-        <button type="submit" class="btn btn-info">{{id ? 'Editieren' : 'Eintragen'}}!</button>
+        <button
+                type="submit"
+                class="btn btn-info"
+                :disabled="!online"
+        >
+          {{id ? 'Editieren' : 'Eintragen'}}!
+        </button>
         <button v-if="id" type="button" @click="deletePost" class="btn ml-2 btn-danger">Löschen!</button>
       </div>
     </div>
@@ -232,7 +248,7 @@ export default {
       completed_promises: 0,
     };
   },
-  props: ["user", "mobile", "postToEdit"],
+  props: ["user", "mobile", "online", "postToEdit"],
   watch: {
     readableTimestamp() {
       this.timestamp = new Date(this.readableTimestamp).getTime();
@@ -412,6 +428,10 @@ export default {
       this.readableTimestamp = this.dateToInputFormat(new Date());
     }else if(this.postToEdit !== null){
       this.id = this.postToEdit._id;
+    }
+
+    if(!this.online){
+      swalWithBootstrapButtons.fire('Offline', 'Das erstellen von Einträgen ist leider nur online möglich :(', 'error');
     }
 
     if (!(this.postToEdit && this.postToEdit._id === this.id)) return;

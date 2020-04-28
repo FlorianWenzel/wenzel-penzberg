@@ -1,31 +1,48 @@
 
 <template>
   <div id="app" >
-    <Navbar  @login="login" :mobile="mobile" :user="user"></Navbar>
+    <Navbar  @login="login" :mobile="mobile" :online="online" :user="user"></Navbar>
     <div id="content">
-      <router-view :user="user" @editPost="editPost" :postToEdit="postToEdit" :mobile="mobile"></router-view>
+      <Alert v-if="!online" :show="!online && showOfflineAlert" type="dark" html="Du bist offline, gecachte Bilder werden trotzdem angezeigt." @close="closeOfflineAlert" />
+      <router-view :user="user" :online="online" @editPost="editPost" :postToEdit="postToEdit" :mobile="mobile"></router-view>
     </div>
   </div>
 </template>
 <script>
+  import Swal from "sweetalert2";
+
   const VERSION = "1.0.0"
   import Navbar from './components/Navbar.vue'
+  import Alert from './components/Alert.vue';
   import * as env from "./assets/env.js";
-  import { post } from "./assets/cache.js";
+  import { post, reset } from "./assets/cache.js";
 
+  const swalWithBootstrapButtons = Swal.mixin({
+    customClass: {
+      confirmButton: 'btn btn-info mr-1',
+      cancelButton: 'btn btn-secondary'
+    },
+    buttonsStyling: false
+  });
   export default {
     name: 'App',
     data: () => {
       return {
         user: null,
         mobile: false,
-        postToEdit: null
+        online: true,
+        postToEdit: null,
+        showOfflineAlert: true,
       }
     },
     components: {
+      Alert,
       Navbar
     },
     methods: {
+      closeOfflineAlert(){
+        this.showOfflineAlert = false;
+      },
       login ({user}) {
         this.user = user;
         localStorage.setItem('token', user.token);
@@ -36,14 +53,21 @@
       },
       handleResize(){
         this.mobile = window.innerWidth < 700;
+      },
+      handleConnectionChange({type}){
+        this.online = type === 'online';
       }
     },
     mounted(){
       window.addEventListener("resize", this.handleResize);
+      window.addEventListener("online", this.handleConnectionChange)
+      window.addEventListener("offline", this.handleConnectionChange)
     },
     created(){
-
       const token = localStorage.getItem('token');
+      if(!navigator.onLine){
+        this.online = false;
+      }
       if(window.innerWidth < 700)
         this.mobile = true;
       post(env.backend_url + '/check_token', {token})
@@ -54,7 +78,22 @@
       post(env.backend_url + '/check_version', {version: VERSION})
           .then(({data}) => {
             if(data.update)
-              location.reload(true);
+              swalWithBootstrapButtons.fire({
+              html: "Neue Version herunterladen? <br> (empfohlen)",
+              icon: "question",
+              title: "Update verfügbar!",
+              showCancelButton: true,
+              cancelButtonText: "Nein",
+              confirmButtonText: "Ja"
+            })
+            .then(({value})=>{
+              if(value){
+                reset()
+                .then(() => {
+                  location.reload(true);
+                })
+              }
+            })
           })
     }
   }
@@ -73,14 +112,19 @@
     -moz-osx-font-smoothing: grayscale;
     text-align: center;
     color: #2c3e50;
+    height: 100vh;
+    width: 100vw;
   }
   body > .mainwrapper {
   }
   #content {
-    padding-top: 20px;
-    background-color: white;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100vw;
+    padding-top: 5rem;
     height: 100vh;
+    background-color: white;
     overflow-y: scroll;
   }
   .viewer-canvas{

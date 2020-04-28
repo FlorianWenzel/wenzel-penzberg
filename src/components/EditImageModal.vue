@@ -2,10 +2,11 @@
     <modal name="EditImageModal" :width="modalWidth" :height="500" :minWidth="300" @before-open="loadImage">
         <div class="p-3 text-center position-relative w-100 h-100">
             <img v-if="image.type !== 'video'" :src="image.src" height="auto" width="200px" style="max-height: 300px;" alt=" ">
-            <video
+             <video
                     v-if="image.type === 'video'"
                     muted
                     loop
+                    playsinline
                     class="vue-gallery-image"
                     :src="image.src"
                     autoplay

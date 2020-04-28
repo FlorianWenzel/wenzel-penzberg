@@ -26,7 +26,7 @@
             <i v-if="playing" class="fas fa-pause text-light"></i>
         </div>
         <div class="close" @click="close">
-            <i class="fas fa-times text-light"></i>
+            <i class="fas fa-2x fa-times text-light"></i>
         </div>
         <div v-if="images[index].text && !displayText" @click="showText" class="showText"><i class="fas fa-angle-up fa-2x text-light"></i></div>
         <div v-if="images[index].text && displayText" v-touch:swipe.bottom="hideText" @click="hideText" class="text">{{images[index].text}}</div>
@@ -168,12 +168,14 @@
     }
     .close {
         position: fixed;
-        right: 1rem;
-        top: 1rem;
+        background: rgba(54, 54, 54, .8);
+        padding: 8px 8px 8px 8px;
+        right: 0;
+        top: 0;
     }
     .prev {
         padding: 16px 8px 16px 8px;
-        background: rgba(54, 54, 54, .6);
+        background: rgba(54, 54, 54, .8);
         position: fixed;
         left: 0;
         top: calc(50vh - 32px);
@@ -182,7 +184,7 @@
     .play {
         padding: 8px;
         line-height: 8px;
-        background: rgba(54, 54, 54, .6);
+        background: rgba(54, 54, 54, .8);
         position: fixed;
         left: calc(50vw - 23px);
         top: 0;
@@ -190,7 +192,7 @@
     }
     .next {
         padding: 16px 8px 16px 8px;
-        background: rgba(54, 54, 54, .6);
+        background: rgba(54, 54, 54, .8);
         position: fixed;
         right: 0;
         top: calc(50vh - 32px);

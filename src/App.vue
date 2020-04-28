@@ -11,7 +11,7 @@
 <script>
   import Swal from "sweetalert2";
 
-  const VERSION = "1.0.0"
+  const VERSION = "1.1.0"
   import Navbar from './components/Navbar.vue'
   import Alert from './components/Alert.vue';
   import * as env from "./assets/env.js";

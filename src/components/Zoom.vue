@@ -7,6 +7,7 @@
                 v-if="images[index].type === 'video'"
                 controls
                 autoplay
+                playsinline
                 v-touch:swipe="swipe"
                 :src="images[index].src"
         >

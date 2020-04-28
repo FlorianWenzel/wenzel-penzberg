@@ -29,6 +29,7 @@
                     @click="click(image)"
                     muted
                     loop
+                    playsinline
                     @loadeddata="loadImage(image)"
                     class="vue-gallery-image"
                     :style="getBackground(image)"

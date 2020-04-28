@@ -11,7 +11,6 @@
 <script>
   import Swal from "sweetalert2";
 
-  const VERSION = "1.1.0"
   import Navbar from './components/Navbar.vue'
   import Alert from './components/Alert.vue';
   import * as env from "./assets/env.js";
@@ -28,6 +27,7 @@
     name: 'App',
     data: () => {
       return {
+        version: "1.1.1",
         user: null,
         mobile: false,
         online: true,
@@ -75,7 +75,7 @@
             if(data)
               this.user = data;
           })
-      post(env.backend_url + '/check_version', {version: VERSION})
+      post(env.backend_url + '/check_version', {version: this.version})
           .then(({data}) => {
             if(data.update)
               swalWithBootstrapButtons.fire({

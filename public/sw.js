@@ -7,7 +7,7 @@ if (workbox) {
 }
 workbox.routing.registerRoute(
     /\/image\//,
-    new workbox.strategies.StaleWhileRevalidate({
+    new workbox.strategies.CacheFirst({
       "cacheName": "images",
       puglins: [
         new workbox.expiration.Plugin({
@@ -18,7 +18,7 @@ workbox.routing.registerRoute(
     }))
 workbox.routing.registerRoute(
     /\//,
-    new workbox.strategies.StaleWhileRevalidate({
+    new workbox.strategies.NetworkFirst({
       "cacheName": "assets",
       puglins: [
         new workbox.expiration.Plugin({

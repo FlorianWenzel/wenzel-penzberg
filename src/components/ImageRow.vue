@@ -9,7 +9,7 @@
                 :style="size[index] + getBackground(image)"
         >
             <img
-                    v-if="!loaded[index] && !noThumbnail"
+                    v-if="image.type !== 'video' && !loaded[index] && !noThumbnail"
                     :src="image.thumbnail_url"
                     @click="click(image)"
                     :alt="image.text ? image.text : ' '"
@@ -25,7 +25,7 @@
                     class="vue-gallery-image"
             />
             <video
-                    v-if="image.type === 'video' &&!iOS"
+                    v-if="image.type === 'video' && !iOS"
                     @click="click(image)"
                     muted
                     loop

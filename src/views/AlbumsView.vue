@@ -81,12 +81,12 @@
                         return;
                     }
                 }
-                if(this.openAlbumAmountOfPosts + 5 > this.postsByAlbum[this.path].length){
+                if(this.openAlbumAmountOfPosts + 3 > this.postsByAlbum[this.path].length){
                     this.openAlbumAmountOfPosts = this.postsByAlbum[this.path].length;
                     $state.complete();
 
                 }else{
-                    this.openAlbumAmountOfPosts += 5;
+                    this.openAlbumAmountOfPosts += 3;
                     if($state)
                         $state.loaded();
                 }

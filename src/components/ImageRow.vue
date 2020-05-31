@@ -25,7 +25,7 @@
                     class="vue-gallery-image"
             />
             <video
-                    v-if="image.type === 'video'"
+                    v-if="image.type === 'video' &&!iOS"
                     @click="click(image)"
                     muted
                     loop
@@ -39,7 +39,6 @@
             >
                 <source :src="image.src" type="video/mp4">
             </video>
-
         </div>
     </div>
 </template>

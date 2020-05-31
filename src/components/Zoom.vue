@@ -4,12 +4,11 @@
             <div class="progress-bar h-25 bg-info" role="progressbar" :aria-valuenow="progressValue" :aria-valuemin="0"  :style="'width: ' + progressValue + 'vw;'" aria-valuemax="100"></div>
         </div>
         <video
-                v-if="images[index].type === 'video'"
+                v-if="images[index].type === 'video' && !iOS"
                 controls
-                :autoplay="!iOS"
+                autoplay
                 playsinline
                 v-touch:swipe="swipe"
-                :src="images[index].src"
         >
             <source :src="images[index].src" type="video/mp4">
         </video>

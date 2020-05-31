@@ -6,7 +6,7 @@
         <video
                 v-if="images[index].type === 'video'"
                 controls
-                autoplay
+                :autoplay="!iOS"
                 playsinline
                 v-touch:swipe="swipe"
                 :src="images[index].src"
@@ -45,7 +45,8 @@
                 interval: null,
                 playing: false,
                 progressValue: 0,
-                displayText: true
+                displayText: true,
+                iOS: false
             }
         },
         props: ["images", "i", "mobile"],
@@ -61,6 +62,7 @@
                     zoom.close();
 
             });
+            this.iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         },
         methods: {
             close(){

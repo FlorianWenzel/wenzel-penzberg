@@ -34,7 +34,8 @@
                     class="vue-gallery-image"
                     :style="getBackground(image)"
                     :src="image.src"
-                    autoplay
+                    :autoplay="!iOS"
+                    :controls="iOS"
             >
                 <source :src="image.src" type="video/mp4">
             </video>
@@ -60,6 +61,7 @@
                 size: [],
                 loaded: [],
                 hideText: [],
+                iOS: false,
             };
         },
         methods: {
@@ -111,6 +113,9 @@
             width() {
                 this.updateSizes();
             },
+        },
+        mounted() {
+            this.iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         }
     };
 </script>

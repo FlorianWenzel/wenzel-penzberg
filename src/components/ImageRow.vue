@@ -34,8 +34,7 @@
                     class="vue-gallery-image"
                     :style="getBackground(image)"
                     :src="image.src"
-                    :autoplay="!iOS"
-                    :controls="iOS"
+                    autoplay
             >
                 <source :src="image.src" type="video/mp4">
             </video>

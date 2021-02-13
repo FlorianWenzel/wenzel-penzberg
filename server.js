@@ -414,6 +414,6 @@ app.get("*", async (req, res) => {
   res.sendFile(__dirname + "/dist/index.html");
 });
 
-http.listen(3000, function() {
-  console.log("listening on *:3000");
+http.listen(3311, function() {
+  console.log("listening on *:3311");
 });
